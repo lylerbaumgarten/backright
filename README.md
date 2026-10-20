@@ -19,6 +19,17 @@ Re-run `npm run app` after code changes to refresh the installed copy.
 
 Grant camera access when asked. A tray/menu-bar icon keeps it running in the background; the window hides when closed.
 
+## Menu-bar icon = status
+
+| Icon | Meaning |
+|---|---|
+| Solid figure | Monitoring, posture fine |
+| Amber figure | You're being nudged right now |
+| Outline figure | Paused, not calibrated yet, or screen locked |
+| Outline + dot | Nudges snoozed |
+
+Hover it for a tooltip with the same in words; the menu's top line says it too.
+
 ## How to use it
 
 1. **Pick Sitting or Standing** (top right, or from the tray). Each mode has its own calibration.

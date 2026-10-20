@@ -1,5 +1,6 @@
 const { app, BrowserWindow, Tray, Menu, screen, ipcMain, session, protocol, powerMonitor, nativeImage, systemPreferences, shell } = require("electron");
 const path = require("node:path");
+const { BASELINE_VERSION, trayState, trayText, ICON } = require("./tray-state");
 const fs = require("node:fs");
 
 const ROOT = path.resolve(__dirname, "../..");
@@ -157,6 +158,7 @@ function setWarning(on) {
   if (on && Date.now() < snoozeUntil) on = false;      // snoozed
   if (warning === on) return;
   warning = on;
+  updateTray();
   clearTimeout(hideTimer);
   if (on) {
     allOverlayWins().forEach(w => w.showInactive());
@@ -204,21 +206,43 @@ function pauseMonitoring() {
 }
 
 // ---- tray ----
-function trayIcon() {
-  // black-and-transparent "template" glyph (assets/trayTemplate.png + @2x) — macOS tints it for light/dark menu bars
-  const img = nativeImage.createFromPath(path.join(ROOT, "assets/trayTemplate.png"));
-  img.setTemplateImage(true);
-  return img;
+const trayImages = {};
+function trayImage(name) {
+  // black-and-transparent "template" glyphs (…Template.png + @2x): macOS tints them for light/dark menu bars.
+  // trayWarn is amber and deliberately NOT a template, so it keeps its colour.
+  return trayImages[name] ??= (() => {
+    const img = nativeImage.createFromPath(path.join(ROOT, `assets/${name}.png`));
+    img.setTemplateImage(name.endsWith("Template"));
+    return img;
+  })();
+}
+
+let idle = false;   // screen locked / asleep
+const isCalibrated = () => settings.baselines?.[settings.mode]?.v === BASELINE_VERSION;
+const snoozeLabel = () => new Date(snoozeUntil).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+function currentTray() {
+  const snoozed = snoozeUntil > Date.now();
+  const state = trayState({ warning, monitoring: settings.monitoring, calibrated: isCalibrated(), idle, snoozed });
+  return { state, ...trayText(state, { monitoring: settings.monitoring, calibrated: isCalibrated(), idle, snoozeUntilLabel: snoozed ? snoozeLabel() : "" }) };
+}
+/** Icon + tooltip follow the app's state; cheap enough to call on every change. */
+function updateTray() {
+  if (!tray) return;
+  const { state, tip } = currentTray();
+  if (process.env.POSTURE_DEBUG) console.log(`[tray] ${state} — ${tip}`);
+  tray.setImage(trayImage(ICON[state]));
+  tray.setToolTip(tip);
 }
 
 function rebuildTray() {
   if (!tray) return;
+  updateTray();
   tray.setContextMenu(Menu.buildFromTemplate([
-    { label: settings.monitoring ? "Monitoring: on" : "Monitoring: off", enabled: false },
+    { label: currentTray().label, enabled: false },
     { label: settings.monitoring ? "Pause monitoring" : "Start monitoring", click: () => sendToPanel("cmd:toggle-monitoring") },
     { type: "separator" },
     snoozeUntil > Date.now()
-      ? { label: `Nudges snoozed until ${new Date(snoozeUntil).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })} — resume`, click: () => snooze(0) }
+      ? { label: `Resume nudges (snoozed until ${snoozeLabel()})`, click: () => snooze(0) }
       : { label: "Snooze nudges", submenu: [5, 30, 60].map(m => ({ label: m === 60 ? "1 hour" : `${m} minutes`, click: () => snooze(m) })) },
     { type: "separator" },
     { label: "Sitting", type: "radio", checked: settings.mode === "sit", click: () => setMode("sit") },
@@ -262,8 +286,7 @@ app.whenReady().then(() => {
   // Normal Dock presence (so there is always an icon to click to reopen the window); the tray icon complements it.
   if (process.platform === "darwin") app.dock?.setIcon(nativeImage.createFromPath(path.join(ROOT, "assets/icon.png")));
 
-  tray = new Tray(trayIcon());
-  tray.setToolTip("Posture");
+  tray = new Tray(trayImage(ICON.off));
   tray.on("click", showPanel);
   rebuildTray();
 
@@ -272,10 +295,11 @@ app.whenReady().then(() => {
   for (const ev of ["display-added", "display-removed", "display-metrics-changed"]) screen.on(ev, syncOverlays);
 
   // No point watching an empty chair: stop sampling while the screen is locked / asleep.
-  powerMonitor.on("lock-screen", () => sendToPanel("system:idle", true));
-  powerMonitor.on("suspend", () => sendToPanel("system:idle", true));
-  powerMonitor.on("unlock-screen", () => sendToPanel("system:idle", false));
-  powerMonitor.on("resume", () => sendToPanel("system:idle", false));
+  const setIdle = v => { idle = v; updateTray(); rebuildTray(); sendToPanel("system:idle", v); };
+  powerMonitor.on("lock-screen", () => setIdle(true));
+  powerMonitor.on("suspend", () => setIdle(true));
+  powerMonitor.on("unlock-screen", () => setIdle(false));
+  powerMonitor.on("resume", () => setIdle(false));
 });
 
 app.on("before-quit", () => { app.isQuitting = true; });

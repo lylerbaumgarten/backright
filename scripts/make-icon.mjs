@@ -1,4 +1,4 @@
-// Generates the app icon (assets/icon.png + icon.icns) and the menu-bar glyph (assets/trayTemplate*.png).
+// Generates the app icon (assets/icon.png + icon.icns) and the menu-bar glyphs (assets/tray*.png).
 // Pure Node — shapes are rendered from signed-distance functions and written as PNG by hand, so there are
 // no image tools or npm packages involved.   Run: npm run icon   (iconutil is macOS-only; PNGs work anywhere)
 import { deflateSync, crc32 } from "node:zlib";
@@ -63,19 +63,30 @@ function appIcon(x, y, px) {
   return [...c, body];
 }
 
-// ---------- menu-bar glyph: black + alpha "template" image (macOS tints it for light/dark) ----------
-function trayGlyph(x, y, px) {
-  const head = cov(circle(x, y, 512, 300, 150), px);
-  const neck = cov(rrect(x, y, 512, 470, 62, 80, 30), px);
-  const shoulders = cov(rrect(x, y, 512, 800, 360, 210, 190), px) * cov(y - 1000, px) ;
-  const a = Math.max(head, neck, Math.min(1, shoulders));
-  return [0, 0, 0, a];
-}
+// ---------- menu-bar glyphs ----------
+// Black + alpha "template" images (macOS tints them for light/dark menu bars), except the amber warning one.
+//   trayTemplate        solid          → monitoring, all good
+//   trayOffTemplate     outline        → paused / needs calibration / screen locked
+//   traySnoozeTemplate  outline + dot  → nudges snoozed
+//   trayWarn            solid amber    → you're being nudged right now (not a template, so it keeps its colour)
+const figureD = (x, y) => Math.min(circle(x, y, 512, 290, 165), rrect(x, y, 512, 480, 70, 80, 30), rrect(x, y, 512, 930, 400, 360, 230));   // head, neck, shoulders (runs off the bottom edge)
+const solidGlyph = (x, y, px) => cov(figureD(x, y), px) * cov(y - 1000, px);
+const outlineGlyph = (x, y, px) => cov(Math.abs(figureD(x, y)) - 46 * Math.max(1, px / 46), px) * cov(y - 1000, px);
+const dotGlyph = (x, y, px) => cov(circle(x, y, 820, 820, 130), px);
+const tmpl = f => (x, y, px) => [0, 0, 0, Math.min(1, f(x, y, px))];
+const GLYPHS = {
+  trayTemplate: tmpl(solidGlyph),
+  trayOffTemplate: tmpl(outlineGlyph),
+  traySnoozeTemplate: tmpl((x, y, px) => Math.max(outlineGlyph(x, y, px), dotGlyph(x, y, px))),
+  trayWarn: (x, y, px) => [240, 150, 30, solidGlyph(x, y, px)],
+};
 
 // ---------- write everything ----------
 writeFileSync(path.join(assets, "icon.png"), render(1024, appIcon));
-writeFileSync(path.join(assets, "trayTemplate.png"), render(22, trayGlyph));
-writeFileSync(path.join(assets, "trayTemplate@2x.png"), render(44, trayGlyph));
+for (const [name, paint] of Object.entries(GLYPHS)) {
+  writeFileSync(path.join(assets, `${name}.png`), render(22, paint));
+  writeFileSync(path.join(assets, `${name}@2x.png`), render(44, paint));
+}
 
 if (process.platform === "darwin") {
   const set = path.join(root, "build/icon.iconset");
@@ -86,4 +97,4 @@ if (process.platform === "darwin") {
   execFileSync("iconutil", ["-c", "icns", set, "-o", path.join(assets, "icon.icns")]);
   rmSync(set, { recursive: true, force: true });
 }
-console.log("assets/ ready: icon.png, icon.icns, trayTemplate.png, trayTemplate@2x.png");
+console.log("assets/ ready: icon.png, icon.icns, tray*.png");
