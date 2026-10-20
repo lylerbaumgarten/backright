@@ -13,6 +13,8 @@ npm start
 
 On macOS, use `npm run dev:app` instead of `npm start`: it runs a renamed copy (`build/Posture.app`) so macOS gives Posture its own camera permission prompt. (Running via `npm start` makes macOS blame whatever launched it — a terminal, editor or Claude — and the camera is often silently denied.)
 
+**Start over (for testing):** `npm run fresh` quits the app, deletes saved settings and relaunches into the first-run walkthrough. Add `-- --camera` to also reset the macOS camera permission, `-- --all` to wipe the whole data folder.
+
 Grant camera access when asked. A tray/menu-bar icon keeps it running in the background; the window hides when closed.
 
 ## How to use it
