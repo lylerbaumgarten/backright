@@ -1,9 +1,9 @@
 import { PoseLandmarker, FilesetResolver } from "./vendor/vision_bundle.mjs";
+import { createCamera, withTimeout } from "./camera.js";
+
+export { createCamera };
 
 let landmarker, loading;
-
-const withTimeout = (promise, ms, what) =>
-  Promise.race([promise, new Promise((_, rej) => setTimeout(() => rej(new Error(`${what} timed out after ${ms / 1000}s`)), ms))]);
 
 /** Load the bundled pose model (no network — everything is under app://local/vendor). Safe to call concurrently. */
 export function loadModel() {
@@ -20,33 +20,6 @@ export function loadModel() {
     console.log(`pose model ready (${delegate}) in ${Math.round(performance.now() - t0)}ms`);
   })().catch(e => { loading = null; throw e; });
   return loading;
-}
-
-/**
- * Camera lifecycle. Several features can need the camera at once (monitoring, setup guide,
- * calibration), so it's reference-counted by reason: the stream — and the camera light —
- * only exists while at least one reason holds it.
- */
-export function createCamera(video) {
-  const reasons = new Set();
-  let stream = null, starting = null;
-  async function sync() {
-    if (reasons.size && !stream) {
-      starting ??= (async () => {
-        stream = await withTimeout(navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480, frameRate: { ideal: 5, max: 15 }, facingMode: "user" } }), 15000, "Camera start");
-        video.srcObject = stream; await video.play();
-      })().finally(() => { starting = null; });
-      await starting;
-    } else if (!reasons.size && stream) {
-      stream.getTracks().forEach(t => t.stop()); stream = null; video.srcObject = null;
-    }
-  }
-  return {
-    get active() { return !!stream && video.readyState >= 2; },
-    async acquire(reason) { reasons.add(reason); await sync(); },
-    async release(reason) { reasons.delete(reason); await sync(); },
-    async releaseAll() { reasons.clear(); await sync().catch(() => {}); },
-  };
 }
 
 /** Run one detection on the current video frame. The frame is never copied, saved or sent anywhere. */

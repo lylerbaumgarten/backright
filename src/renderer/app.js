@@ -48,6 +48,7 @@ async function syncCamera() {
       setStatus("Starting camera…");
     }
     for (const [reason, on] of Object.entries(wanted)) await (on ? camera.acquire(reason) : camera.release(reason));
+    if (any && notice.startsWith("Couldn't start")) { notice = ""; render(); }   // it works now — drop the stale message
   } catch (e) {
     console.error(e);
     notice = "Couldn't start: " + (e.message || e.name);
