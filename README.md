@@ -46,6 +46,6 @@ test/           Unit tests for the posture maths and privacy guardrails
 
 - Front-facing webcam only; no view of the lower body, so knee/hip checks in desk setup are best-effort and fall back to the written checklist.
 - Performance not yet profiled — sampling is every 0.5 s by default; the interval is adjustable. Still-frame sampling and CPU/battery measurement are a later pass.
-- The screen glow is drawn as four thin edge strips per display (not one full-screen window), shown only while a nudge is up, and flagged as excluded from screenshots/recordings. A full-screen window gets picked by macOS window-capture (⇧⌘4 → Space) as "the window under the cursor" and then can't be captured; strips leave the middle of the screen free. Tray menu → **Snooze nudges** pauses the glow for 5 min / 30 min / 1 h (handy for screen shares).
+- The screen glow is drawn as four thin edge strips per display (not one full-screen window), shown only while a nudge is up, and flagged as excluded from screenshots/recordings. A full-screen window gets picked by macOS window-capture (⇧⌘4 → Space) as "the window under the cursor" and then can't be captured; strips leave the middle of the screen free. The reminder pill has **Pause** (stops monitoring and turns the camera off) and **Settings** (brings the app to the front, even if it was closed to the menu bar). Tray menu → **Snooze nudges** pauses the glow for 5 min / 30 min / 1 h (handy for screen shares).
 - Overlay over true full-screen apps on macOS/Windows needs real-world testing.
 - Not yet packaged/signed for distribution.

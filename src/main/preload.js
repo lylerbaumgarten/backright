@@ -12,6 +12,8 @@ contextBridge.exposeInMainWorld("posture", {
   relaunch: () => ipcRenderer.send("app:relaunch"),
   setWarning: onOff => ipcRenderer.send("posture:warning", !!onOff),
   previewOverlay: () => ipcRenderer.send("overlay:preview"),
+  pillAction: action => ipcRenderer.send("pill:action", action),
+  onShowSettings: fn => on("cmd:show-settings", fn),
   onSettings: fn => on("settings:changed", fn),
   onToggleMonitoring: fn => on("cmd:toggle-monitoring", fn),
   onIdle: fn => on("system:idle", fn),

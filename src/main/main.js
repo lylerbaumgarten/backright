@@ -91,7 +91,7 @@ const STRIP = 120;   // px; the glow fades out within this
 function stripsFor(b) {
   const { x, y, width: w, height: h } = b, T = STRIP;
   return [
-    { x, y, width: w, height: T, ox: 0, oy: 0, pill: 1 },                              // top (also carries the pill)
+    { x, y, width: w, height: T, ox: 0, oy: 0, pill: 0 },                              // top
     { x, y: y + h - T, width: w, height: T, ox: 0, oy: h - T, pill: 0 },               // bottom
     { x, y: y + T, width: T, height: h - 2 * T, ox: 0, oy: T, pill: 0 },               // left
     { x: x + w - T, y: y + T, width: T, height: h - 2 * T, ox: w - T, oy: T, pill: 0 },// right
@@ -113,6 +113,23 @@ function overlayStrip(r) {
   return win;
 }
 
+// The reminder pill is its own small window so it can have buttons (the glow strips stay click-through).
+// focusable:false → clicking it never steals focus from whatever you're working in.
+const PILL_W = 500, PILL_H = 48;
+function overlayPill(b) {
+  const win = new BrowserWindow({
+    x: Math.round(b.x + (b.width - PILL_W) / 2), y: b.y + 12, width: PILL_W, height: PILL_H, transparent: true, frame: false, hasShadow: false,
+    resizable: false, movable: false, focusable: false, skipTaskbar: true, show: false, alwaysOnTop: true, fullscreenable: false,
+    webPreferences: { preload: path.join(__dirname, "preload.js"), contextIsolation: true, sandbox: true, backgroundThrottling: false },
+  });
+  win.setAlwaysOnTop(true, "screen-saver");
+  win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+  win.setContentProtection(true);
+  win.loadURL("app://local/pill.html");
+  win.webContents.once("did-finish-load", () => { pushOverlayState(win); if (warning) win.showInactive(); });
+  return win;
+}
+
 const allOverlayWins = () => [...overlays.values()].flatMap(o => o.wins).filter(w => !w.isDestroyed());
 
 function syncOverlays() {
@@ -122,7 +139,7 @@ function syncOverlays() {
     const sig = JSON.stringify(d.bounds), existing = overlays.get(d.id);
     if (existing?.sig === sig) continue;
     existing?.wins.forEach(w => !w.isDestroyed() && w.destroy());
-    overlays.set(d.id, { sig, wins: stripsFor(d.bounds).map(overlayStrip) });
+    overlays.set(d.id, { sig, wins: [...stripsFor(d.bounds).map(overlayStrip), overlayPill(d.bounds)] });
   }
 }
 
@@ -165,7 +182,23 @@ function createPanel() {
   panel.once("ready-to-show", () => panel.show());
   panel.on("close", e => { if (!app.isQuitting) { e.preventDefault(); panel.hide(); } });
 }
-const showPanel = () => { if (panel) { panel.show(); panel.focus(); } };
+const showPanel = () => {
+  if (!panel || panel.isDestroyed()) { createPanel(); return; }   // closed for real (or crashed) → rebuild; it shows itself when ready
+  if (panel.isMinimized()) panel.restore();
+  panel.show(); panel.focus();
+  if (process.platform === "darwin") app.focus({ steal: true });   // we're a menu-bar app; make sure it comes to the front
+};
+function openSettings() {
+  const rebuilt = !panel || panel.isDestroyed();
+  showPanel();
+  if (rebuilt) panel.webContents.once("did-finish-load", () => setTimeout(() => sendToPanel("cmd:show-settings"), 800));
+  else sendToPanel("cmd:show-settings");
+}
+function pauseMonitoring() {
+  settings.monitoring = false; saveSettings(); rebuildTray();
+  setWarning(false);
+  sendToPanel("settings:changed", settings);   // the panel stops the camera and updates its buttons
+}
 
 // ---- tray ----
 function trayIcon() {
@@ -222,6 +255,7 @@ ipcMain.on("camera:open-settings", () => {
 });
 ipcMain.on("app:relaunch", () => { app.isQuitting = true; app.relaunch(); app.quit(); });
 ipcMain.on("posture:warning", (_e, on) => setWarning(!!on));
+ipcMain.on("pill:action", (_e, action) => { if (action === "pause") pauseMonitoring(); else if (action === "settings") openSettings(); });
 ipcMain.on("overlay:preview", () => { setWarning(true); setTimeout(() => setWarning(false), 3500); });
 
 // ---- lifecycle ----

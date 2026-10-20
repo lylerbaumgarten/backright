@@ -1,0 +1,28 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Posture reminder</title>
+<style>
+  html, body { margin:0; height:100%; background:transparent; overflow:hidden; user-select:none; -webkit-user-select:none;
+               font:600 14px/1 system-ui,-apple-system,"Segoe UI",sans-serif; }
+  #pill { box-sizing:border-box; width:100%; height:100%; display:flex; align-items:center; gap:10px; padding:0 8px 0 18px;
+          background:rgba(240,162,58,.96); color:#1a1200; border-radius:999px;
+          transform:translateY(-70px); opacity:0; transition:transform .7s ease, opacity .7s ease; }
+  #pill.on { transform:none; opacity:1; }
+  .msg { flex:1; white-space:nowrap; }
+  button { font:inherit; font-size:13px; border:0; border-radius:999px; padding:8px 14px; cursor:pointer;
+           background:rgba(26,18,0,.12); color:#1a1200; }
+  button:hover { background:rgba(26,18,0,.24); }
+  button.primary { background:#1a1200; color:#fbe9cc; } button.primary:hover { background:#000; }
+</style>
+</head>
+<body>
+<div id="pill">
+  <span class="msg">Sit tall — head back, shoulders down</span>
+  <button id="pause" title="Stop monitoring (camera off)">Pause</button>
+  <button id="settings" class="primary" title="Open Posture settings">Settings</button>
+</div>
+<script type="module" src="pill.js"></script>
+</body>
+</html>

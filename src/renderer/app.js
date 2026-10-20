@@ -290,6 +290,9 @@ $("goCalibrate").onclick = () => { setupLive = false; startCalibration(); };
 
 window.posture.onSettings(s => { settings = s; monitor.reset(); render(); syncCamera(); });
 window.posture.onToggleMonitoring(toggleMonitoring);
+window.posture.onShowSettings(() => {   // from the nudge pill: land on the Monitor tab's settings (unless mid-walkthrough)
+  if (tab !== "onboard") { tab = "monitor"; render(); $("settingsCard").scrollIntoView({ behavior: "smooth", block: "start" }); }
+});
 window.posture.onIdle(v => { idle = v; monitor.reset(); window.posture.setWarning(false); render(); syncCamera(); });
 
 // ---------- boot ----------
