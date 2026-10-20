@@ -18,7 +18,7 @@ import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const outDir = path.join(root, "docs/screenshots");
-const binary = path.join(root, "build/Posture.app/Contents/MacOS/Electron");
+const binary = path.join(root, "build/BackRight.app/Contents/MacOS/Electron");
 const PORT = 9341, DPR = 2, VIEW_W = 760, VIEW_H = 820;   // fixed viewport + pixel density → identical output on any display
 mkdirSync(outDir, { recursive: true });
 
@@ -90,7 +90,7 @@ const glowShadow = css("overlay.html", /box-shadow:\s*([^;]+);/), pillCss = css(
 
 async function composite(name, html, { width, height }) {
   // the app serves pages from inside its own bundle, so the temporary page has to live there (not in src/)
-  const page = path.join(root, `build/Posture.app/Contents/Resources/app/src/renderer/_docs-${name}.html`);
+  const page = path.join(root, `build/BackRight.app/Contents/Resources/app/src/renderer/_docs-${name}.html`);
   writeFileSync(page, html); tempPages.push(page);
   await call("Page.navigate", { url: `app://local/_docs-${name}.html` }); await sleep(1200);
   await call("Emulation.setDeviceMetricsOverride", { width, height, deviceScaleFactor: DPR, mobile: false });

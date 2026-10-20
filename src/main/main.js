@@ -181,7 +181,7 @@ function snooze(minutes) {
 // ---- panel (control window; also hosts detection, so it must keep running when hidden) ----
 function createPanel() {
   panel = new BrowserWindow({
-    width: 760, height: 820, show: false, title: "Posture", backgroundColor: "#f6f5f2",
+    width: 760, height: 820, show: false, title: "BackRight", backgroundColor: "#f6f5f2",
     webPreferences: { preload: path.join(__dirname, "preload.js"), contextIsolation: true, sandbox: true, backgroundThrottling: false },
   });
   panel.loadURL("app://local/index.html");
@@ -259,7 +259,7 @@ function rebuildTray() {
     { label: "Sitting", type: "radio", checked: settings.mode === "sit", click: () => setMode("sit") },
     { label: "Standing", type: "radio", checked: settings.mode === "stand", click: () => setMode("stand") },
     { type: "separator" },
-    { label: "Open Posture…", click: showPanel },
+    { label: "Open BackRight…", click: showPanel },
     { label: "Quit", click: () => { app.isQuitting = true; app.quit(); } },
   ]));
 }

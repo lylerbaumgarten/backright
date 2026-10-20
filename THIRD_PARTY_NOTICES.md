@@ -1,6 +1,6 @@
 # Third-party notices
 
-Posture's own code is MIT-licensed (see `LICENSE`). It is built on, and ships with, the following open-source
+BackRight's own code is MIT-licensed (see `LICENSE`). It is built on, and ships with, the following open-source
 components. Each remains under its own license.
 
 ## Electron — MIT
@@ -20,5 +20,5 @@ Google. Model card: https://storage.googleapis.com/mediapipe-assets/Model%20Card
 https://storage.googleapis.com/mediapipe-models/ by `npm run vendor`; it is not stored in this repository.
 Full license text: `LICENSES/Apache-2.0.txt`.
 
-The model card lists "any form of surveillance or identity recognition" as out of scope. Posture runs entirely on your
+The model card lists "any form of surveillance or identity recognition" as out of scope. BackRight runs entirely on your
 own computer, uses the model only to estimate your own head and shoulder position, and does not identify anyone.

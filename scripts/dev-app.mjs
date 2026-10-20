@@ -1,9 +1,9 @@
-// macOS app builder/launcher. Builds a standalone, renamed copy of Electron — build/Posture.app — with the app's
+// macOS app builder/launcher. Builds a standalone, renamed copy of Electron — build/BackRight.app — with the app's
 // own name, icon and bundle id, and the app code bundled inside (Contents/Resources/app), so it runs without the
 // project folder, shows up in the Dock / Launchpad / Spotlight, and gets its own camera permission prompt.
 //
 //   npm run dev:app              rebuild if needed, sync the latest code into the bundle, launch it
-//   npm run app                  same, then also install it to ~/Applications/Posture.app and launch that copy
+//   npm run app                  same, then also install it to ~/Applications/BackRight.app and launch that copy
 //   npm run dev:app -- --debug   launch with a DevTools remote-debugging port (9333)
 //   npm run dev:app -- --no-launch  build/sync only (no quit, no launch) — used for CI and clean-clone checks
 //   npm run dev:app -- --rebuild throw the bundle away and recreate it (this changes its signature, so macOS
@@ -21,7 +21,7 @@ if (process.platform !== "darwin") { console.error("dev-app is macOS-only; use `
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const args = new Set(process.argv.slice(2));
-const app = path.join(root, "build/Posture.app");
+const app = path.join(root, "build/BackRight.app");
 const res = path.join(app, "Contents/Resources");
 const plist = path.join(app, "Contents/Info.plist");
 const pkg = JSON.parse(readFileSync(path.join(root, "package.json"), "utf8"));
@@ -40,17 +40,17 @@ if (!existsSync(path.join(root, "assets/icon.icns"))) execFileSync("node", [path
 // 1. the bundle (once)
 if (args.has("--rebuild")) rmSync(app, { recursive: true, force: true });
 if (!existsSync(path.join(res, "icon.icns"))) {
-  console.log("Creating build/Posture.app (one time)…");
+  console.log("Creating build/BackRight.app (one time)…");
   rmSync(app, { recursive: true, force: true });
   mkdirSync(path.dirname(app), { recursive: true });
   cpSync(path.join(root, "node_modules/electron/dist/Electron.app"), app, { recursive: true, verbatimSymlinks: true });
   rmSync(path.join(res, "electron.icns"), { force: true });
   cpSync(path.join(root, "assets/icon.icns"), path.join(res, "icon.icns"));
-  setKey("CFBundleName", "string", "Posture"); setKey("CFBundleDisplayName", "string", "Posture");
-  setKey("CFBundleIdentifier", "string", "com.lylebaumgarten.posture");
+  setKey("CFBundleName", "string", "BackRight"); setKey("CFBundleDisplayName", "string", "BackRight");
+  setKey("CFBundleIdentifier", "string", "com.lylebaumgarten.backright");
   setKey("CFBundleIconFile", "string", "icon.icns");
   setKey("CFBundleShortVersionString", "string", pkg.version); setKey("CFBundleVersion", "string", pkg.version);
-  setKey("NSCameraUsageDescription", "string", "Posture uses your camera to check your posture. Images are analysed on this Mac and never stored or sent anywhere.");
+  setKey("NSCameraUsageDescription", "string", "BackRight uses your camera to check your posture. Images are analysed on this Mac and never stored or sent anywhere.");
   pb("Delete :NSMicrophoneUsageDescription");
   mkdirSync(path.join(res, "app"), { recursive: true });   // present at signing time, contents synced below
   execFileSync("codesign", ["--force", "--deep", "--sign", "-", app], { stdio: "inherit" });
@@ -73,13 +73,13 @@ spawnSync("touch", [app]);                                                      
 
 // 3. quit any running copy (it owns the menu-bar icon), optionally install, launch
 if (args.has("--no-launch")) { console.log(`Built ${app} (not launched)`); process.exit(0); }
-spawnSync("pkill", ["-f", "Posture.app/Contents/MacOS"], { stdio: "ignore" });
+spawnSync("pkill", ["-f", "BackRight.app/Contents/MacOS"], { stdio: "ignore" });
 await new Promise(r => setTimeout(r, 800));
 let target = app;
 if (args.has("--install")) {
   const apps = path.join(os.homedir(), "Applications");
   mkdirSync(apps, { recursive: true });
-  target = path.join(apps, "Posture.app");
+  target = path.join(apps, "BackRight.app");
   rmSync(target, { recursive: true, force: true });
   cpSync(app, target, { recursive: true, verbatimSymlinks: true });
   console.log(`Installed ${target}`);

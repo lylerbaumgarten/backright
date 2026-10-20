@@ -20,13 +20,13 @@ const ICON = { warn: "trayWarn", active: "trayActive", snooze: "traySnoozeTempla
 
 function trayText(state, { monitoring, calibrated, idle, snoozeUntilLabel = "" }) {
   switch (state) {
-    case "warn": return { label: "Posture slipping", tip: "Posture — slipping, sit tall" };
-    case "active": return { label: "Monitoring", tip: "Posture — monitoring" };
-    case "snooze": return { label: `Nudges snoozed until ${snoozeUntilLabel}`, tip: `Posture — nudges snoozed until ${snoozeUntilLabel}` };
+    case "warn": return { label: "Posture slipping", tip: "BackRight — slipping, sit tall" };
+    case "active": return { label: "Monitoring", tip: "BackRight — monitoring" };
+    case "snooze": return { label: `Nudges snoozed until ${snoozeUntilLabel}`, tip: `BackRight — nudges snoozed until ${snoozeUntilLabel}` };
     default:
-      if (idle && monitoring) return { label: "Paused — screen locked", tip: "Posture — paused while the screen is locked" };
-      if (monitoring && !calibrated) return { label: "Calibrate to start", tip: "Posture — calibrate to start" };
-      return { label: "Not monitoring", tip: "Posture — not monitoring" };
+      if (idle && monitoring) return { label: "Paused — screen locked", tip: "BackRight — paused while the screen is locked" };
+      if (monitoring && !calibrated) return { label: "Calibrate to start", tip: "BackRight — calibrate to start" };
+      return { label: "Not monitoring", tip: "BackRight — not monitoring" };
   }
 }
 

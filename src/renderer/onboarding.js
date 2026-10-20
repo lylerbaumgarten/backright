@@ -82,7 +82,7 @@ export function createWizard(root, api) {
     else if (id === "welcome") {
       html = `${top()}
         <h2>Let's get you set up</h2>
-        <p class="lead">About two minutes: first how your camera is used (spoiler: it never leaves this Mac), then calibrate so Posture learns what <i>your</i> good posture looks like. There's also an illustrated desk-setup guide if you want to tune your desk first.</p>
+        <p class="lead">About two minutes: first how your camera is used (spoiler: it never leaves this Mac), then calibrate so BackRight learns what <i>your</i> good posture looks like. There's also an illustrated desk-setup guide if you want to tune your desk first.</p>
         <p class="hint">Do you mostly sit or stand?</p>
         <div class="choice" role="group">
           <button data-mode="sit" class="${mode === "sit" ? "on" : ""}"><b>Sitting</b><small>Desk and chair</small></button>
@@ -97,7 +97,7 @@ export function createWizard(root, api) {
       html = `${top()}
         <p class="eyebrow">Before we use the camera</p>
         <h2>Your camera stays on this Mac</h2>
-        <p class="lead">Posture watches your head and shoulders through the webcam. Here's exactly what happens to the video:</p>
+        <p class="lead">BackRight watches your head and shoulders through the webcam. Here's exactly what happens to the video:</p>
         <ul class="promises">
           <li><span class="tick">✓</span><div><b>Analysed here, never uploaded.</b> A small pose model runs inside this app. There's no account and no server.</div></li>
           <li><span class="tick">✓</span><div><b>Never saved.</b> Each frame is checked in memory, then thrown away. Only a few numbers (like head height) are kept for a moment.</div></li>

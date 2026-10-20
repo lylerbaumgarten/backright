@@ -1,6 +1,6 @@
-# Posture
+# BackRight
 
-A small desktop app that watches your posture through the webcam and gives a faint, screen-wide nudge when you slip. Works for sitting and standing desks. **Everything runs on your computer — no images are stored or sent anywhere.**
+**BackRight** is a small desktop app that watches your posture through the webcam and gives a faint, screen-wide nudge when you slip. Works for sitting and standing desks. **Everything runs on your computer — no images are stored or sent anywhere.**
 
 > Status: early prototype (v0.1). Electron, macOS-first; Windows should work but is untested.
 
@@ -46,7 +46,7 @@ npm install     # also copies the MediaPipe runtime and downloads the pose model
 npm start
 ```
 
-**On macOS, install it as a real app:** `npm run app` builds a standalone `Posture.app` (own name, icon and camera permission, code bundled inside), installs it to `~/Applications`, and launches it. After that it lives in the Dock, Launchpad and Spotlight — closing the window leaves it running, and clicking the Dock icon brings the window back. Right-click its Dock icon → Options → Keep in Dock to pin it. `npm run dev:app` does the same without installing (runs `build/Posture.app`), `-- --debug` opens a DevTools port, `-- --rebuild` recreates the bundle (macOS will ask for camera access again). `npm start` runs the plain Electron binary, which macOS blames for camera access — avoid it for camera testing.
+**On macOS, install it as a real app:** `npm run app` builds a standalone `BackRight.app` (own name, icon and camera permission, code bundled inside), installs it to `~/Applications`, and launches it. After that it lives in the Dock, Launchpad and Spotlight — closing the window leaves it running, and clicking the Dock icon brings the window back. Right-click its Dock icon → Options → Keep in Dock to pin it. `npm run dev:app` does the same without installing (runs `build/BackRight.app`), `-- --debug` opens a DevTools port, `-- --rebuild` recreates the bundle (macOS will ask for camera access again). `npm start` runs the plain Electron binary, which macOS blames for camera access — avoid it for camera testing.
 
 Re-run `npm run app` after code changes to refresh the installed copy.
 
@@ -103,4 +103,4 @@ test/           Unit tests for the posture maths and privacy guardrails
 
 ## License
 
-MIT — see [LICENSE](LICENSE). Posture bundles Electron (MIT), MediaPipe Tasks Vision (Apache-2.0) and Google's BlazePose GHUM pose model (Apache-2.0); see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+MIT — see [LICENSE](LICENSE). BackRight bundles Electron (MIT), MediaPipe Tasks Vision (Apache-2.0) and Google's BlazePose GHUM pose model (Apache-2.0); see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
