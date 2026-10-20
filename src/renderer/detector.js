@@ -1,16 +1,25 @@
 import { PoseLandmarker, FilesetResolver } from "./vendor/vision_bundle.mjs";
 
-let landmarker;
+let landmarker, loading;
 
-/** Load the bundled pose model (no network — everything is under app://local/vendor). */
-export async function loadModel() {
-  if (landmarker) return;
-  const fileset = await FilesetResolver.forVisionTasks("app://local/vendor/wasm");
-  const make = delegate => PoseLandmarker.createFromOptions(fileset, {
-    baseOptions: { modelAssetPath: "app://local/vendor/pose_landmarker_lite.task", delegate },
-    runningMode: "VIDEO", numPoses: 1,
-  });
-  try { landmarker = await make("GPU"); } catch { landmarker = await make("CPU"); }
+const withTimeout = (promise, ms, what) =>
+  Promise.race([promise, new Promise((_, rej) => setTimeout(() => rej(new Error(`${what} timed out after ${ms / 1000}s`)), ms))]);
+
+/** Load the bundled pose model (no network — everything is under app://local/vendor). Safe to call concurrently. */
+export function loadModel() {
+  loading ??= (async () => {
+    const t0 = performance.now();
+    const fileset = await FilesetResolver.forVisionTasks("app://local/vendor/wasm");
+    const make = delegate => PoseLandmarker.createFromOptions(fileset, {
+      baseOptions: { modelAssetPath: "app://local/vendor/pose_landmarker_lite.task", delegate },
+      runningMode: "VIDEO", numPoses: 1,
+    });
+    let delegate = "GPU";
+    try { landmarker = await withTimeout(make("GPU"), 10000, "GPU model load"); }
+    catch (e) { console.warn("GPU delegate failed, using CPU:", e.message); delegate = "CPU"; landmarker = await withTimeout(make("CPU"), 20000, "CPU model load"); }
+    console.log(`pose model ready (${delegate}) in ${Math.round(performance.now() - t0)}ms`);
+  })().catch(e => { loading = null; throw e; });
+  return loading;
 }
 
 /**
@@ -24,7 +33,7 @@ export function createCamera(video) {
   async function sync() {
     if (reasons.size && !stream) {
       starting ??= (async () => {
-        stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480, frameRate: { ideal: 5, max: 15 }, facingMode: "user" } });
+        stream = await withTimeout(navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480, frameRate: { ideal: 5, max: 15 }, facingMode: "user" } }), 15000, "Camera start");
         video.srcObject = stream; await video.play();
       })().finally(() => { starting = null; });
       await starting;
@@ -36,6 +45,7 @@ export function createCamera(video) {
     get active() { return !!stream && video.readyState >= 2; },
     async acquire(reason) { reasons.add(reason); await sync(); },
     async release(reason) { reasons.delete(reason); await sync(); },
+    async releaseAll() { reasons.clear(); await sync().catch(() => {}); },
   };
 }
 

@@ -34,11 +34,18 @@ async function syncCamera() {
   const wanted = { monitoring: wantMonitoring(), calibrate: !!calib, setup: setupLive };
   const any = Object.values(wanted).some(Boolean);
   try {
-    if (any) { await window.posture.requestCamera(); await ensureModel(); }
+    if (any) {
+      setStatus("Checking camera permission…");
+      const access = await window.posture.requestCamera();
+      if (access === "denied" || access === "restricted") throw new Error("Camera access is blocked. Allow it for this app in System Settings → Privacy & Security → Camera, then try again.");
+      await ensureModel();
+      setStatus("Starting camera…");
+    }
     for (const [reason, on] of Object.entries(wanted)) await (on ? camera.acquire(reason) : camera.release(reason));
   } catch (e) {
     console.error(e);
-    setStatus("Couldn't start the camera: " + (e.message || e.name));
+    notice = "Couldn't start: " + (e.message || e.name);
+    camera.releaseAll();
     calib = null; setupLive = false;
     if (settings.monitoring) { settings.monitoring = false; window.posture.setSettings({ monitoring: false }); }
     render(); return;

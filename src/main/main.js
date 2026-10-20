@@ -165,8 +165,10 @@ ipcMain.handle("settings:set", (_e, patch) => {
   return settings;
 });
 ipcMain.handle("camera:request", async () => {
-  if (process.platform !== "darwin") return true;
-  return systemPreferences.getMediaAccessStatus("camera") === "granted" || systemPreferences.askForMediaAccess("camera");
+  if (process.platform !== "darwin") return "granted";
+  const status = systemPreferences.getMediaAccessStatus("camera");   // granted | denied | restricted | not-determined
+  if (status === "not-determined") return (await systemPreferences.askForMediaAccess("camera")) ? "granted" : "denied";
+  return status;
 });
 ipcMain.on("posture:warning", (_e, on) => setWarning(!!on));
 ipcMain.on("overlay:preview", () => { setWarning(true); setTimeout(() => setWarning(false), 3500); });
