@@ -44,5 +44,6 @@ test/           Unit tests for the posture maths and privacy guardrails
 
 - Front-facing webcam only; no view of the lower body, so knee/hip checks in desk setup are best-effort and fall back to the written checklist.
 - Performance not yet profiled — sampling is every 0.5 s by default; the interval is adjustable. Still-frame sampling and CPU/battery measurement are a later pass.
+- The screen-glow overlay is hidden except while a nudge is showing, and is flagged as excluded from screenshots/recordings (macOS and Windows honour this to varying degrees — verify on your OS version).
 - Overlay over true full-screen apps on macOS/Windows needs real-world testing.
 - Not yet packaged/signed for distribution.

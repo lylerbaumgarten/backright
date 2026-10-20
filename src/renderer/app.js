@@ -1,5 +1,5 @@
 import { loadModel, createCamera, detect, drawSkeleton } from "./detector.js";
-import { measure, average, createMonitor, setupChecks } from "./posture.js";
+import { measure, average, createMonitor, setupChecks, BASELINE_VERSION } from "./posture.js";
 import { GUIDE, CHECK_LABELS } from "./guide.js";
 import { art } from "./guide-art.js";
 import { createWizard } from "./onboarding.js";
@@ -17,11 +17,11 @@ let timer = null, lastTick = 0;
 let tab = "monitor";                // monitor | setup | privacy | onboard (the first-run walkthrough)
 let cameraBlocked = false;
 let notice = "";                    // transient message shown under the status (survives re-renders)
-let hintTimer = null, renderedSetupMode = null;
+let hintTimer = null, hintPersist = false, renderedSetupMode = null;
 
 const COUNTDOWN_MS = 4000, SAMPLE_MS = 3000, MIN_SAMPLES = 4;
 const modeName = m => (m === "sit" ? "sitting" : "standing");
-const baseline = () => settings.baselines[settings.mode];
+const baseline = () => { const b = settings.baselines[settings.mode]; return b?.v === BASELINE_VERSION ? b : null; };   // older calibrations are ignored
 
 async function save(patch) { settings = await window.posture.setSettings(patch); render(); syncCamera(); }
 function setStatus(text, cls = "") { $("statusText").textContent = text; $("dot").className = "dot " + cls; }
@@ -59,7 +59,11 @@ async function syncCamera() {
   }
   const showStage = any && (previewOn || !!calib || setupLive);
   stage.hidden = !showStage;
-  if (any && !timer) loop(); else if (!any) { clearTimeout(timer); timer = null; window.posture.setWarning(false); }
+  if (any && !timer) loop();
+  else if (!any) {
+    clearTimeout(timer); timer = null; window.posture.setWarning(false);
+    if (previewOn) { previewOn = false; render(); }   // nothing to preview once the camera is off
+  }
 }
 
 function loop() {
@@ -81,7 +85,10 @@ function handle(lm) {
   if (!wantMonitoring()) return;
 
   const m = lm && measure(lm);
-  if (!m) { setStatus("Can't see you — check your framing"); return; }
+  if (!m) {   // nobody in frame: don't leave a stale nudge on screen
+    monitor.reset(); window.posture.setWarning(false);
+    setStatus("Can't see you — check your framing"); return;
+  }
   // Smooth over ~1.5s of real time regardless of how often we sample.
   const alpha = 1 - Math.exp(-dt / 1500);
   const r = monitor.update(baseline(), m, now, { sensitivity: settings.sensitivity, delayMs: settings.delaySec * 1000, alpha });
@@ -117,7 +124,7 @@ function handleCalibration(lm, now) {
   if (now >= calib.until) {
     cd.hidden = true;
     if (calib.samples.length >= MIN_SAMPLES) {
-      const b = average(calib.samples); calib = null; monitor.reset();
+      const b = { ...average(calib.samples), v: BASELINE_VERSION }; calib = null; monitor.reset();
       save({ baselines: { ...settings.baselines, [settings.mode]: b } }).then(() => finishCalib(true));
       setStatus(`Calibrated for ${modeName(settings.mode)}`, "ok");
     } else {
@@ -135,7 +142,14 @@ function renderSetup() {
   $("setupIntro").textContent = g.intro;
   if (renderedSetupMode !== mode) {   // illustrations are static per mode — don't rebuild on every settings change
     renderedSetupMode = mode;
-    $("steps").innerHTML = g.steps.map((s, i) => `
+    const o = g.overview;
+    $("steps").innerHTML = `
+      <div class="gcard">
+        <div class="art">${art(mode, o.art)}</div>
+        <h3>${esc(o.title)}</h3>
+        <p>${esc(o.body)}</p>
+        <ul class="points">${o.points.map(p => `<li>${esc(p)}</li>`).join("")}</ul>
+      </div>` + g.steps.map((s, i) => `
       <div class="gcard">
         <div class="art">${art(mode, s.art)}</div>
         <h3>${i + 1}. ${esc(s.title)}</h3>
@@ -162,10 +176,12 @@ function renderChecks(result) {
 function showTabHint(text, { persist = false } = {}) {
   $("tabHintText").textContent = text;
   $("tabHint").hidden = false; $("tabSetup").classList.add("pulse");
-  clearTimeout(hintTimer);
-  if (!persist) hintTimer = setTimeout(hideTabHint, 12000);
+  clearTimeout(hintTimer); hintPersist = persist;
+  if (!persist) hintTimer = setTimeout(hideTabHint, 6000);
 }
-function hideTabHint() { clearTimeout(hintTimer); $("tabHint").hidden = true; $("tabSetup").classList.remove("pulse"); }
+function hideTabHint() { clearTimeout(hintTimer); hintPersist = false; $("tabHint").hidden = true; $("tabSetup").classList.remove("pulse"); }
+// A reminder, not a fixture: any click elsewhere dismisses it (the walkthrough pins it only while it's relevant).
+document.addEventListener("click", () => { if (!hintPersist) hideTabHint(); }, true);
 
 // ---------- rendering ----------
 function render() {
@@ -177,12 +193,13 @@ function render() {
   $("modeSeg").hidden = inWizard;
 
   const mode = settings.mode;
-  const needsSetup = settings.onboarded && !settings.setupDone[mode] && !settings.setupBannerDismissed[mode];
+  const needsSetup = settings.onboarded && !settings.monitoring && !settings.setupDone[mode] && !settings.setupBannerDismissed[mode];
   $("setupBanner").hidden = !needsSetup;
   $("bannerText").textContent = `Desk setup for ${modeName(mode)} hasn't been done yet. A minute of setup makes calibration more accurate.`;
 
   $("toggleMon").textContent = settings.monitoring ? "Pause monitoring" : "Start monitoring";
   $("togglePreview").textContent = previewOn ? "Hide preview" : "Show preview";
+  $("togglePreview").disabled = !(wantMonitoring() || calib || setupLive);   // the preview needs a live camera
   $("calibrate").disabled = !!calib;
   $("camBlocked").hidden = !cameraBlocked;
   $("calHint").textContent = notice || (baseline()
@@ -216,10 +233,10 @@ const wizard = createWizard($("tab-onboard"), {
   relaunch: () => window.posture.relaunch(),
   finish: async ({ start, skippedSetup }) => {
     tab = "monitor"; notice = "";
+    hideTabHint();
     await save({ onboarded: true });
-    if (skippedSetup || !settings.setupDone[settings.mode]) showTabHint("You can do the desk setup any time from here", { persist: false });
-    else hideTabHint();
     if (start) await toggleMonitoring();
+    else if (skippedSetup || !settings.setupDone[settings.mode]) showTabHint("You can do the desk setup any time from here");
   },
 });
 
@@ -241,6 +258,7 @@ document.querySelectorAll("#tabs button").forEach(b => b.onclick = () => {
 async function toggleMonitoring() {
   const on = !settings.monitoring;
   monitor.reset(); window.posture.setWarning(false);
+  if (on) hideTabHint(); else previewOn = false;
   await save({ monitoring: on });
   if (on && !baseline()) startCalibration();
 }

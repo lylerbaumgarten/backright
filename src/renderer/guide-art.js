@@ -1,120 +1,187 @@
-// Side-view line illustrations for the desk-setup guide, drawn as inline SVG strings.
-// One base scene per mode (sitting / standing) plus a per-step overlay that highlights what that
-// step is about. Styling lives in style.css (.a-*) so it follows light/dark mode.
+// Illustrations for the desk-setup guide, drawn as inline SVG strings (no images, no network).
+//
+// A single `figure()` draws a filled side-view body from joint positions, so the same code produces
+// the upright and slouched poses for both sitting and standing. Per-step overlays add the callouts:
+// green joint markers, angle arcs, dimension lines and labelled pills. Colours come from CSS
+// variables (--art-*, --ok, --bad in style.css) so everything follows light/dark mode.
+// NB: no gradients/filters — a <defs> reference inside a hidden SVG breaks every other copy on the page.
 
-const W = 420, H = 296;
-const svg = body => `<svg viewBox="0 0 ${W} ${H}" role="img" xmlns="http://www.w3.org/2000/svg">${body}</svg>`;
-const text = (x, y, s, { anchor = "start", cls = "a-text" } = {}) => `<text class="${cls}" x="${x}" y="${y}" text-anchor="${anchor}">${s}</text>`;
-const lines = (x, y, arr, opts) => arr.map((s, i) => text(x, y + i * 14, s, opts)).join("");
-const dot = (x, y, r = 4) => `<circle class="a-dot" cx="${x}" cy="${y}" r="${r}"/>`;
-const arrowH = (x1, x2, y) =>
-  `<g class="a-hl a-thin"><line x1="${x1}" y1="${y}" x2="${x2}" y2="${y}"/><line x1="${x1}" y1="${y}" x2="${x1 + 7}" y2="${y - 4}"/><line x1="${x1}" y1="${y}" x2="${x1 + 7}" y2="${y + 4}"/>` +
-  `<line x1="${x2}" y1="${y}" x2="${x2 - 7}" y2="${y - 4}"/><line x1="${x2}" y1="${y}" x2="${x2 - 7}" y2="${y + 4}"/></g>`;
+const W = 480, H = 340;
+const wrap = (body, w = W, h = H) => `<svg viewBox="0 0 ${w} ${h}" role="img" xmlns="http://www.w3.org/2000/svg">${body}</svg>`;
+const f1 = n => Math.round(n * 10) / 10;
+const pt = p => `${f1(p[0])} ${f1(p[1])}`;
 
-// ---- seated scene ----
-const SIT = {
-  eye: [166, 72], elbow: [152, 152], wrist: [206, 152], hip: [146, 186], knee: [206, 188], ankle: [208, 258],
-  screenX: 296, screenTop: 82, floor: 268,
-};
-function sitScene() {
+// ---------- primitives ----------
+const limb = (a, b, w, cls = "al") => `<line class="${cls}" x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" stroke-width="${w}"/>`;
+const shoe = (a, floor, dx = 0) => `<rect class="ab" x="${a[0] - 11 + dx}" y="${floor - 14}" width="44" height="14" rx="6"/>`;
+
+function torso(S, Hp, bulge = 0) {
+  const dx = Hp[0] - S[0], dy = Hp[1] - S[1], L = Math.hypot(dx, dy), d = [dx / L, dy / L], f = [d[1], -d[0]];   // f = front normal
+  const at = (t, o, e = 0) => [S[0] + d[0] * (L * t + e) + f[0] * o, S[1] + d[1] * (L * t + e) + f[1] * o];
+  const bt = at(0, -13, -6), bm = at(0.5, -(13 + bulge * 2)), bb = at(1, -16, 10), fb = at(1, 15, 6), fm = at(0.55, 19), ft = at(0, 13, -4);
+  return `<path class="ab" stroke-linejoin="round" stroke-width="6" d="M${pt(bt)} Q${pt(bm)} ${pt(bb)} L${pt(fb)} Q${pt(fm)} ${pt(ft)} Z"/>`;
+}
+
+/**
+ * Side-view body facing right. p = { hc, S, H, K, A, E, W, floor, bulge?, farDx? }
+ * hc head centre · S shoulder · H hip · K knee · A ankle · E elbow · W wrist
+ */
+function figure(p) {
+  const fx = p.farDx ?? 8;
+  const far = (a) => [a[0] + fx, a[1] - 1];
+  const neckBase = [p.S[0] + 1, p.S[1] - 8], neckTop = [p.hc[0] - 3, p.hc[1] + 12];
+  const hc = p.hc;
   return `
-  <line class="a-furn" x1="20" y1="268" x2="404" y2="268"/>
-  <!-- desk + monitor -->
-  <rect class="a-furn a-fill" x="176" y="158" width="196" height="8" rx="2"/>
-  <rect class="a-furn a-fill" x="352" y="166" width="6" height="102"/>
-  <line class="a-furn" x1="300" y1="158" x2="300" y2="144"/><line class="a-furn" x1="284" y1="158" x2="316" y2="158"/>
-  <rect class="a-furn a-fill" x="296" y="82" width="10" height="62" rx="3"/>
-  <rect class="a-furn a-fill" x="196" y="153" width="40" height="5" rx="2"/>
+    ${limb(far(p.H), far(p.K), 19, "alf")}${limb(far(p.K), far(p.A), 14, "alf")}${shoe(far(p.A), p.floor, fx).replace('class="ab"', 'class="abf"')}
+    ${limb(p.S, far(p.E), 11, "alf")}${limb(far(p.E), [p.W[0] + fx - 2, p.W[1]], 9, "alf")}
+    ${torso(p.S, p.H, p.bulge || 0)}
+    ${limb(neckBase, neckTop, 13)}
+    ${limb(p.H, p.K, 21)}${limb(p.K, p.A, 16)}${shoe(p.A, p.floor)}
+    <circle class="ab" cx="${hc[0]}" cy="${hc[1]}" r="17"/>
+    <path class="ab" stroke-linejoin="round" stroke-width="3" d="M${hc[0] + 14} ${hc[1] - 4} L${hc[0] + 22} ${hc[1] + 5} L${hc[0] + 13} ${hc[1] + 7} Z"/>
+    <circle class="a-eyedot" cx="${hc[0] + 11}" cy="${hc[1] - 3}" r="2"/>
+    ${limb(p.S, p.E, 12, "ala")}${limb(p.E, p.W, 10, "ala")}<circle class="aha" cx="${p.W[0]}" cy="${p.W[1]}" r="6"/>`;
+}
+
+const joint = (p, r = 7) => `<circle class="a-joint" cx="${p[0]}" cy="${p[1]}" r="${r}"/>`;
+const hot = p => `<circle class="a-hot1" cx="${p[0]}" cy="${p[1]}" r="21"/><circle class="a-hot2" cx="${p[0]}" cy="${p[1]}" r="13"/><circle class="a-hot3" cx="${p[0]}" cy="${p[1]}" r="6"/>`;
+const guide = (a, b, cls = "a-dashl") => `<line class="${cls}" x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}"/>`;
+const arc = (cx, cy, r, a0, a1, sweep) => {   // angles in degrees, svg convention (y down, clockwise positive)
+  const P = a => `${f1(cx + r * Math.cos(a * Math.PI / 180))} ${f1(cy + r * Math.sin(a * Math.PI / 180))}`;
+  return `<path class="a-arc" d="M${P(a0)} A${r} ${r} 0 0 ${sweep} ${P(a1)}"/>`;
+};
+
+/** Labelled pill with an optional leader line to the feature it describes. */
+function pill(x, y, label, { to = null, tone = "ok", align = "start" } = {}) {
+  const w = Math.round(label.length * 6.4 + 20), x0 = align === "end" ? x - w : align === "middle" ? x - w / 2 : x;
+  let out = "";
+  if (to) {
+    const sx = to[0] > x0 + w / 2 ? x0 + w : x0;
+    out += `<line class="a-leader a-${tone}" x1="${sx}" y1="${y}" x2="${to[0]}" y2="${to[1]}"/><circle class="a-ldot a-${tone}f" cx="${to[0]}" cy="${to[1]}" r="3"/>`;
+  }
+  return out + `<rect class="a-pill a-${tone}" x="${x0}" y="${y - 12}" width="${w}" height="24" rx="12"/><text class="a-ptext" x="${x0 + w / 2}" y="${y + 4.5}" text-anchor="middle">${label}</text>`;
+}
+
+/** Double-headed dimension line, horizontal (y fixed) or vertical (x fixed). */
+function dim(a, b, label, { labelAt = null } = {}) {
+  const horiz = Math.abs(a[1] - b[1]) < 1, t = 6;
+  const ends = horiz
+    ? `<line class="a-dim" x1="${a[0]}" y1="${a[1] - t}" x2="${a[0]}" y2="${a[1] + t}"/><line class="a-dim" x1="${b[0]}" y1="${b[1] - t}" x2="${b[0]}" y2="${b[1] + t}"/>`
+    : `<line class="a-dim" x1="${a[0] - t}" y1="${a[1]}" x2="${a[0] + t}" y2="${a[1]}"/><line class="a-dim" x1="${b[0] - t}" y1="${b[1]}" x2="${b[0] + t}" y2="${b[1]}"/>`;
+  const mid = labelAt || [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+  return `<line class="a-dim" x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}"/>${ends}${pill(mid[0], mid[1], label, { align: "middle" })}`;
+}
+
+// ---------- seated scene ----------
+const SIT_GOOD = { hc: [188, 98], S: [176, 138], H: [170, 226], K: [252, 228], A: [254, 296], E: [178, 190], W: [238, 189], floor: 312 };
+const SIT_SLOUCH = { hc: [252, 130], S: [222, 154], H: [188, 228], K: [264, 232], A: [266, 296], E: [224, 200], W: [280, 198], floor: 312, bulge: 11 };
+const sitSetting = () => `
+  <ellipse class="a-shadow" cx="250" cy="313" rx="200" ry="6"/>
+  <line class="a-floor" x1="14" y1="312" x2="466" y2="312"/>
   <!-- chair -->
-  <rect class="a-furn a-fill" x="116" y="190" width="90" height="9" rx="4"/>
-  <line class="a-furn a-thick" x1="123" y1="194" x2="117" y2="118"/>
-  <line class="a-furn" x1="158" y1="199" x2="158" y2="252"/><line class="a-furn" x1="126" y1="254" x2="192" y2="254"/>
-  <circle class="a-furn" cx="128" cy="262" r="5"/><circle class="a-furn" cx="190" cy="262" r="5"/>
-  <!-- person -->
-  <g class="a-line">
-    <circle class="a-fill" cx="158" cy="74" r="17"/>
-    <path d="M154 91 L150 104 L146 186 L206 188 L208 258 L208 266 L234 266"/>
-    <path d="M150 104 L152 152 L206 152"/>
-  </g>
-  <circle class="a-eye" cx="166" cy="72" r="2.4"/>`;
-}
+  <path class="a-chair-back" d="M152 234 Q138 190 146 130"/>
+  <line class="a-chair-stem" x1="190" y1="246" x2="190" y2="294"/><line class="a-chair-stem" x1="150" y1="296" x2="232" y2="296" stroke-width="5"/>
+  <circle class="a-wheel" cx="152" cy="305" r="7"/><circle class="a-wheel" cx="230" cy="305" r="7"/>
+  <rect class="a-seat" x="140" y="232" width="124" height="15" rx="7"/>
+  <!-- desk, keyboard, monitor -->
+  <rect class="a-desk" x="216" y="198" width="234" height="10" rx="3"/><rect class="a-desk" x="432" y="208" width="12" height="104"/>
+  <rect class="a-key" x="232" y="190" width="52" height="8" rx="3"/>
+  <line class="a-post" x1="352" y1="198" x2="352" y2="172"/><rect class="a-monbase" x="328" y="194" width="48" height="5" rx="2"/>
+  <polygon class="a-monitor" points="344,100 357,96 361,174 348,178"/><line class="a-screen" x1="344" y1="102" x2="348" y2="176"/>`;
+const sitCone = (eye, col = "a-cone") => `<polygon class="${col}" points="${pt(eye)} 343 102 347 174"/>`;
+const sit = (pose, over = "") => wrap(sitSetting() + sitCone([pose.hc[0] + 11, pose.hc[1] - 3]) + figure(pose) + over);
+
+// ---------- standing scene ----------
+const STAND_GOOD = { hc: [212, 40], S: [210, 64], H: [210, 152], K: [211, 228], A: [210, 292], E: [212, 116], W: [272, 116], floor: 306, farDx: 10 };
+const STAND_SLOUCH = { hc: [238, 50], S: [206, 72], H: [224, 152], K: [220, 228], A: [208, 292], E: [210, 124], W: [270, 122], floor: 306, bulge: 6, farDx: 10 };
+const standSetting = () => `
+  <ellipse class="a-shadow" cx="250" cy="317" rx="200" ry="6"/>
+  <line class="a-floor" x1="14" y1="316" x2="466" y2="316"/>
+  <rect class="a-mat" x="146" y="306" width="128" height="10" rx="5"/>
+  <rect class="a-desk" x="240" y="122" width="230" height="10" rx="3"/>
+  <rect class="a-desk" x="418" y="132" width="14" height="172"/><rect class="a-desk" x="380" y="304" width="92" height="12" rx="5"/>
+  <rect class="a-key" x="246" y="114" width="52" height="8" rx="3"/>
+  <line class="a-post" x1="352" y1="122" x2="352" y2="106"/><rect class="a-monbase" x="328" y="118" width="48" height="5" rx="2"/>
+  <polygon class="a-monitor" points="344,44 357,40 361,108 348,112"/><line class="a-screen" x1="344" y1="46" x2="348" y2="110"/>`;
+const standCone = eye => `<polygon class="a-cone" points="${pt(eye)} 343 46 347 108"/>`;
+const stand = (pose, over = "") => wrap(`<g transform="translate(0 14)">${standSetting()}${standCone([pose.hc[0] + 11, pose.hc[1] - 3])}${figure(pose)}${over}</g>`);
+
+// ---------- per-step overlays ----------
 const SIT_OVER = {
-  feet: () => `
-    <path class="a-hl a-arcline" d="M182 187 A24 24 0 0 0 207 212"/>
-    ${text(168, 216, "90°", { anchor: "end", cls: "a-text a-hlt" })}
-    <line class="a-hl a-thick" x1="198" y1="268" x2="240" y2="268"/>
-    ${lines(244, 262, ["feet flat"])}
-    ${text(116, 232, "knees level with", { anchor: "end" })}${text(116, 246, "or below hips", { anchor: "end" })}`,
+  feet: () => {
+    const { H: Hp, K, A } = SIT_GOOD;
+    return `${arc(K[0], K[1], 28, 180, 90, 0)}${joint(Hp)}${joint(K)}${joint(A)}
+      ${pill(300, 244, "Knees about 90°", { to: [266, 232] })}${pill(300, 284, "Feet flat on the floor", { to: [284, 306] })}`;
+  },
   back: () => `
-    <ellipse class="a-hlfill" cx="124" cy="160" rx="11" ry="28"/>
-    <ellipse class="a-hl a-thin" cx="124" cy="160" rx="11" ry="28"/>
-    ${lines(14, 150, ["lower back", "supported"], { })}
-    <line class="a-hl a-thin a-dash" x1="146" y1="206" x2="206" y2="206"/>
-    ${lines(214, 222, ["hips back in the seat"])}`,
-  arms: () => `
-    <path class="a-hl a-arcline" d="M151.2 132 A20 20 0 0 1 172 152"/>
-    ${text(166, 138, "90°", { cls: "a-text a-hlt" })}
-    <line class="a-hl a-thin a-dash" x1="206" y1="152" x2="262" y2="152"/>
-    ${lines(186, 112, ["forearms level,", "wrists straight"])}
-    ${dot(206, 152)}`,
-  screen: () => `
-    <line class="a-hl a-thin a-dash" x1="166" y1="72" x2="340" y2="72"/>
-    <line class="a-line a-gaze a-dash" x1="166" y1="72" x2="296" y2="112"/>
-    <rect class="a-hlfill" x="296" y="82" width="10" height="8" rx="2"/>
-    ${arrowH(158, 296, 44)}
-    ${text(227, 36, "about an arm's length", { anchor: "middle", cls: "a-text a-hlt" })}
-    ${lines(318, 94, ["screen top at", "or below", "eye level"])}
-    ${text(344, 66, "eye level", { cls: "a-text a-hlt a-small" })}`,
+    <ellipse class="a-hlfill" cx="147" cy="186" rx="13" ry="38"/><ellipse class="a-hlring" cx="147" cy="186" rx="13" ry="38"/>
+    ${pill(14, 96, "Lower back supported", { to: [143, 170] })}
+    ${guide([150, 226], [270, 226])}${joint(SIT_GOOD.H)}
+    ${pill(290, 262, "Hips all the way back", { to: [182, 232] })}`,
+  arms: () => {
+    const { E, W } = SIT_GOOD;
+    return `${arc(E[0], E[1], 26, -90, 0, 1)}${joint(E)}${joint(W)}${guide(W, [330, W[1]])}
+      ${pill(214, 150, "Elbows about 90°", { to: [193, 177] })}${pill(262, 226, "Wrists straight", { to: [244, 192] })}`;
+  },
+  screen: () => {
+    const eye = [199, 95];
+    return `${guide(eye, [430, 95])}
+      ${dim([208, 62], [344, 62], "50–70 cm")}
+      ${pill(372, 95, "Eye level", {})}${joint([350, 100], 5)}
+      ${pill(214, 134, "Top of screen at eye level", { to: [345, 103] })}`;
+  },
 };
-
-// ---- standing scene ----
-const STAND = { eye: [162, 50], screenTop: 60 };
-function standScene() {
-  return `
-  <line class="a-furn" x1="20" y1="268" x2="404" y2="268"/>
-  <rect class="a-furn a-fill a-mat" x="108" y="266" width="112" height="7" rx="3"/>
-  <rect class="a-furn a-fill" x="172" y="126" width="208" height="8" rx="2"/>
-  <rect class="a-furn a-fill" x="372" y="134" width="6" height="134"/>
-  <line class="a-furn" x1="310" y1="126" x2="310" y2="112"/><line class="a-furn" x1="294" y1="126" x2="326" y2="126"/>
-  <rect class="a-furn a-fill" x="306" y="60" width="10" height="52" rx="3"/>
-  <rect class="a-furn a-fill" x="186" y="121" width="40" height="5" rx="2"/>
-  <g class="a-line">
-    <circle class="a-fill" cx="154" cy="52" r="16"/>
-    <path d="M152 68 L150 82 L150 150 L151 210 L150 258 L150 264 L178 264"/>
-    <path d="M150 82 L150 120 L196 120"/>
-  </g>
-  <circle class="a-eye" cx="162" cy="50" r="2.4"/>`;
-}
 const STAND_OVER = {
-  feet: () => `
-    <rect class="a-hlfill" x="108" y="264" width="112" height="9" rx="3"/>
-    <circle class="a-hl a-thin" cx="151" cy="210" r="9"/>
-    ${lines(196, 214, ["weight even,", "knees soft"])}
-    ${lines(230, 258, ["anti-fatigue mat"], { })}`,
-  arms: () => `
-    <path class="a-hl a-arcline" d="M150 102 A18 18 0 0 1 168 120"/>
-    ${text(173, 108, "90°", { cls: "a-text a-hlt" })}
-    <line class="a-hl a-thin a-dash" x1="196" y1="120" x2="252" y2="120"/>
-    ${lines(190, 84, ["forearms level,", "wrists straight"])}
-    ${dot(196, 120)}`,
-  screen: () => `
-    <line class="a-hl a-thin a-dash" x1="162" y1="50" x2="344" y2="50"/>
-    <line class="a-line a-gaze a-dash" x1="162" y1="50" x2="306" y2="86"/>
-    <rect class="a-hlfill" x="306" y="60" width="10" height="8" rx="2"/>
-    ${arrowH(154, 306, 24)}
-    ${text(230, 16, "about an arm's length", { anchor: "middle", cls: "a-text a-hlt" })}
-    ${lines(326, 72, ["screen top at", "or below", "eye level"])}
-    ${text(348, 44, "eye level", { cls: "a-text a-hlt a-small" })}`,
-  spine: () => `
-    <line class="a-hl a-thin a-dash" x1="151" y1="26" x2="151" y2="266"/>
-    ${dot(154, 52)}${dot(150, 82)}${dot(150, 150)}${dot(150, 258)}
-    ${lines(178, 150, ["ears, shoulders,", "hips and ankles", "in one line"])}`,
+  feet: () => {
+    const { H: Hp, K, A } = STAND_GOOD, [p, q, r] = [Hp, K, A].map(a => [a[0], a[1]]);
+    return `<rect class="a-hlfill" x="146" y="306" width="128" height="10" rx="5"/>${joint(p)}${joint(q)}${joint(r)}
+      ${pill(262, 266, "Feet about hip-width apart", { to: [226, 296] })}${pill(262, 224, "Knees soft, not locked", { to: [222, 228] })}`;
+  },
+  arms: () => {
+    const { E, W } = STAND_GOOD;
+    return `${arc(E[0], E[1], 24, -90, 0, 1)}${joint(E)}${joint(W)}${guide(W, [330, W[1]])}
+      ${pill(240, 70, "Elbows about 90°", { to: [226, 99] })}
+      ${dim([452, 132], [452, 316], "Desk at elbow height", { labelAt: [360, 214] })}`;
+  },
+  screen: () => {
+    const eye = [223, 37];
+    return `${guide(eye, [430, 37])}
+      ${dim([220, 6], [344, 6], "50–70 cm")}
+      ${pill(372, 37, "Eye level", {})}
+      ${pill(244, 80, "Top of screen at eye level", { to: [345, 47] })}`;
+  },
+  spine: () => {
+    const g = STAND_GOOD;
+    const pts = [[g.hc[0], g.hc[1]], g.S, g.H, g.K, g.A].map(a => [a[0] === g.hc[0] ? 211 : a[0], a[1]]);
+    return `${guide([211, -8], [211, 310])}${pts.map(a => joint(a)).join("")}
+      ${pill(14, 40, "Ears over shoulders", { to: [204, 40] })}${pill(14, 78, "Shoulders relaxed", { to: [203, 64] })}
+      ${pill(14, 152, "Pelvis neutral", { to: [203, 152] })}${pill(14, 228, "Knees soft", { to: [203, 228] })}${pill(14, 292, "Weight through the heels", { to: [203, 292] })}`;
+  },
 };
 
-/** Illustration for a guide step: art("sit" | "stand", "feet" | "back" | "arms" | "screen" | "spine"). */
+// ---------- wrong vs right ----------
+function compare(mode) {
+  const sitting = mode === "sit";
+  const bad = sitting ? SIT_SLOUCH : STAND_SLOUCH, good = sitting ? SIT_GOOD : STAND_GOOD;
+  const badSpots = sitting ? [[236, 136], [190, 196], [280, 198], [264, 232]] : [[226, 82], [208, 150], [220, 228], [208, 292]];
+  const goodJoints = sitting ? [[good.hc[0], good.hc[1]], good.S, good.H, good.K, good.A] : [[211, 40], good.S, good.H, good.K, good.A];
+  const scene = (pose, over) => (sitting ? sitSetting() + sitCone([pose.hc[0] + 11, pose.hc[1] - 3]) : `<g transform="translate(0 14)">${standSetting()}${standCone([pose.hc[0] + 11, pose.hc[1] - 3])}`) + figure(pose) + over + (sitting ? "" : "</g>");
+  const badOver = badSpots.map(hot).join("") + (sitting
+    ? pill(266, 52, "Head forward", { to: [240, 120], tone: "bad" }) + pill(14, 150, "Rounded back", { to: [194, 188], tone: "bad" })
+    : pill(264, 40, "Head forward", { to: [242, 74], tone: "bad" }) + pill(14, 130, "Swayed back, locked knees", { to: [204, 150], tone: "bad" }));
+  const goodOver = (sitting ? guide([good.hc[0], 20], [good.hc[0] - 12, 250]) : guide([211, 0], [211, 310])) + goodJoints.map(a => joint(a)).join("") +
+    (sitting ? pill(266, 52, "Ears over shoulders", { to: [194, 98] }) : pill(264, 40, "Stacked in one line", { to: [214, 54] }));
+  return wrap(
+    `<g>${scene(bad, badOver)}</g><g transform="translate(500 0)">${scene(good, goodOver)}</g>
+     <rect class="a-capbar a-badbar" x="0" y="338" width="480" height="40" rx="10"/><rect class="a-capbar a-goodbar" x="500" y="338" width="480" height="40" rx="10"/>
+     <text class="a-cap a-badt" x="240" y="364" text-anchor="middle">✕  ${sitting ? "Slouched" : "Slumped"}</text>
+     <text class="a-cap a-goodt" x="740" y="364" text-anchor="middle">✓  ${sitting ? "Upright and supported" : "Tall and stacked"}</text>`,
+    980, 384);
+}
+
+/** art("sit" | "stand", "compare" | "feet" | "back" | "arms" | "screen" | "spine"). Unknown key → "". */
 export function art(mode, key) {
-  const standing = mode === "stand";
-  const over = (standing ? STAND_OVER : SIT_OVER)[key];
-  if (!over) return "";
-  return svg((standing ? standScene() : sitScene()) + over());
+  if (key === "compare") return compare(mode);
+  if (mode === "stand") return STAND_OVER[key] ? stand(STAND_GOOD, STAND_OVER[key]()) : "";
+  return SIT_OVER[key] ? sit(SIT_GOOD, SIT_OVER[key]()) : "";
 }

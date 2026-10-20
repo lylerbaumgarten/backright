@@ -76,3 +76,28 @@ test("setupChecks flags too-close and uneven shoulders", () => {
   assert.equal(c.distance.status, "adjust");
   assert.equal(c.shoulders.status, "adjust");
 });
+
+test("shoulder tilt doesn't wrap near ±180° when the 'left' shoulder is on the image's right", () => {
+  // MediaPipe's left shoulder is the person's left, which appears on the image's right side.
+  const flipped = (tiltY = 0) => {
+    const lm = pose({ tiltY });
+    const [l, r] = [lm[LM.L_SHOULDER], lm[LM.R_SHOULDER]];
+    lm[LM.L_SHOULDER] = { ...r, y: l.y + 0 }; lm[LM.R_SHOULDER] = { ...l, y: l.y + tiltY };
+    return lm;
+  };
+  const base = measure(flipped(0));
+  assert.ok(Math.abs(base.tilt) < 1, `baseline tilt ${base.tilt}`);
+  // sensor noise nudging one shoulder a hair either way must not look like ~360° of tilt
+  for (const noise of [-0.002, 0.002]) assert.ok(deviation(base, measure(flipped(noise))).tilt < 2);
+});
+
+test("steady, upright posture never triggers a warning, even with landmark jitter", () => {
+  const base = measure(pose());
+  const mon = createMonitor();
+  let warned = false;
+  for (let i = 0; i < 200; i++) {
+    const j = (Math.sin(i * 12.9898) * 43758.5453 % 1) * 0.004;     // ±0.4% of frame
+    warned ||= mon.update(base, measure(pose({ noseY: 0.3 + j, shoulderY: 0.6 - j, tiltY: j })), i * 500).warned;
+  }
+  assert.equal(warned, false);
+});

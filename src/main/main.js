@@ -93,8 +93,10 @@ function overlayFor(display) {
   win.setAlwaysOnTop(true, "screen-saver");
   win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
   win.setIgnoreMouseEvents(true, { forward: true });
+  // Keep this full-screen window out of screenshots / screen recordings / screen shares (macOS + Windows).
+  win.setContentProtection(true);
   win.loadURL("app://local/overlay.html");
-  win.webContents.once("did-finish-load", () => { win.showInactive(); pushOverlayState(win); });
+  win.webContents.once("did-finish-load", () => { pushOverlayState(win); if (warning) win.showInactive(); });
   return win;
 }
 
@@ -113,7 +115,21 @@ function pushOverlayState(win) {
 }
 const pushAllOverlays = () => overlays.forEach(pushOverlayState);
 
-function setWarning(on) { if (warning !== on) { warning = on; pushAllOverlays(); } }
+// The overlay windows only exist on screen while a nudge is showing; the rest of the time they're hidden,
+// so a full-screen transparent window is never sitting over other apps (or confusing screen capture).
+let hideTimer = null;
+function setWarning(on) {
+  if (warning === on) return;
+  warning = on;
+  clearTimeout(hideTimer);
+  if (on) {
+    overlays.forEach(w => { if (!w.isDestroyed()) w.showInactive(); });
+    setTimeout(pushAllOverlays, 30);                    // let the window paint hidden-state first so the fade plays
+  } else {
+    pushAllOverlays();                                  // fade out…
+    hideTimer = setTimeout(() => overlays.forEach(w => { if (!warning && !w.isDestroyed()) w.hide(); }), 2200);   // …then hide
+  }
+}
 
 // ---- panel (control window; also hosts detection, so it must keep running when hidden) ----
 function createPanel() {

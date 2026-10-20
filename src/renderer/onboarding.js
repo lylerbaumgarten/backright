@@ -15,7 +15,7 @@ export function createWizard(root, api) {
 
   const build = () => {
     const g = GUIDE[api.settings().mode];
-    steps = [{ id: "welcome" }, ...g.steps.map((_, i) => ({ id: "guide", i })), { id: "turn" }, { id: "calibrate" }, { id: "done" }];
+    steps = [{ id: "welcome" }, { id: "overview" }, ...g.steps.map((_, i) => ({ id: "guide", i })), { id: "turn" }, { id: "calibrate" }, { id: "done" }];
   };
   const idx = id => steps.findIndex(s => s.id === id);
   const go = n => { step = Math.max(0, Math.min(steps.length - 1, n)); render(); root.scrollIntoView?.({ block: "start" }); };
@@ -58,6 +58,17 @@ export function createWizard(root, api) {
         </div>
         <p class="hint">Have a sit-stand desk? Do this once for each — switch with the Sitting / Standing control after setup.</p>
         <div class="row wiz-nav"><span class="spacer"></span><button class="ghost" data-act="skipSetup">Skip desk setup</button><button class="primary" data-act="next">Start desk setup →</button></div>`;
+    }
+
+    else if (cur.id === "overview") {
+      const o = g.overview;
+      html = `${top()}
+        <p class="eyebrow">Desk setup · the goal</p>
+        <h2>${esc(o.title)}</h2>
+        <div class="art">${art(mode, o.art)}</div>
+        <p class="lead">${esc(o.body)}</p>
+        <ul class="points">${o.points.map(p => `<li>${esc(p)}</li>`).join("")}</ul>
+        ${nav({ skip: { act: "skipSetup", label: "Skip desk setup" }, next: "Show me how →" })}`;
     }
 
     else if (cur.id === "guide") {
@@ -126,7 +137,7 @@ export function createWizard(root, api) {
         <div class="row wiz-nav"><span class="spacer"></span><button data-act="finish">Finish</button>${calibrated ? `<button class="primary" data-act="finishStart">Start monitoring</button>` : ""}</div>`;
     }
     root.innerHTML = html;
-    if (cur.id === "calibrate" && skipped) api.hintDeskSetup(true);
+    api.hintDeskSetup(cur.id === "calibrate" && skipped);
   }
 
   root.addEventListener("click", async e => {

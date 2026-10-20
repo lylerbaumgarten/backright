@@ -7,6 +7,9 @@
 export const GUIDE = {
   sit: {
     intro: "Set up your desk first, then calibrate. Calibration only measures how you sit — it can't tell if the desk itself is wrong.",
+    overview: { art: "compare", title: "What you're aiming for",
+      body: "Good sitting posture is supported and stacked — not held up by effort.",
+      points: ["Head over shoulders, shoulders over hips", "Lower back supported by the chair, not rounded", "Screen and keyboard positioned so you never have to reach or crane"] },
     steps: [
       { art: "feet", title: "Chair & feet", checks: ["knees"],
         body: "Start from the ground up: your chair height sets everything else.",
@@ -28,6 +31,9 @@ export const GUIDE = {
   },
   stand: {
     intro: "Standing needs its own setup — a desk that's right for sitting is almost never right for standing. Raise the desk first, then calibrate.",
+    overview: { art: "compare", title: "What you're aiming for",
+      body: "Good standing posture is a tall, balanced stack — not a lean on one hip or a lock in your knees.",
+      points: ["Ears, shoulders, hips and ankles in one vertical line", "Knees soft, weight even on both feet", "Desk at elbow height and screen at eye level so nothing pulls you forward"] },
     steps: [
       { art: "feet", title: "Feet & weight",
         body: "A stable base makes standing all day far less tiring.",

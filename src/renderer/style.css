@@ -1,6 +1,8 @@
-:root { --bg:#f6f5f2; --fg:#1f2421; --muted:#6b726d; --card:#fff; --line:#e3e1db; --ok:#3f8f5f; --warn:#d98a1c; --accent:#1f2421; }
+:root { --art-body:#2b3a47; --art-far:#74889a; --art-arm:#47607a; --art-furn:#8996a1; --art-desk:#c9d1d8; --art-accent:#e58a2e; --art-mat:#b4c1cb; --art-monitor:#33414d; --art-screen:#8fd0f7; --art-eye:#e8edf1; --bad:#e5484d;
+  --bg:#f6f5f2; --fg:#1f2421; --muted:#6b726d; --card:#fff; --line:#e3e1db; --ok:#3f8f5f; --warn:#d98a1c; --accent:#1f2421; }
 @media (prefers-color-scheme: dark) {
-  :root { --bg:#161917; --fg:#e8ebe8; --muted:#8c958f; --card:#1f2421; --line:#2c332f; --ok:#5fbf86; --warn:#f0a23a; --accent:#e8ebe8; }
+  :root { --art-body:#d4dee6; --art-far:#8195a5; --art-arm:#a9b9c8; --art-furn:#66737e; --art-desk:#3a4650; --art-accent:#f0a23a; --art-mat:#45535f; --art-monitor:#0e1316; --art-screen:#5fb3e6; --art-eye:#1b2024; --bad:#ff6b6f;
+    --bg:#161917; --fg:#e8ebe8; --muted:#8c958f; --card:#1f2421; --line:#2c332f; --ok:#5fbf86; --warn:#f0a23a; --accent:#e8ebe8; }
 }
 * { box-sizing:border-box; }
 body { margin:0; font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif; background:var(--bg); color:var(--fg); }
@@ -42,24 +44,28 @@ input[type=range] { width:100%; }
 /* ---- guide illustrations ---- */
 .art { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:8px; }
 .art svg { display:block; width:100%; height:auto; }
-.a-line { fill:none; stroke:var(--fg); stroke-width:3.2; stroke-linecap:round; stroke-linejoin:round; }
-.a-line.a-fill, .a-line .a-fill { fill:var(--card); }
-.a-furn { stroke:var(--muted); stroke-width:2.4; fill:none; stroke-linecap:round; }
-.a-furn.a-fill { fill:var(--bg); }
-.a-furn.a-thick { stroke-width:6; }
-.a-furn.a-mat { fill:var(--line); }
-.a-hl { stroke:var(--ok); stroke-width:3; fill:none; stroke-linecap:round; }
-.a-hl.a-thin { stroke-width:2; }
-.a-hl.a-thick { stroke-width:4; }
-.a-hl.a-arcline { stroke-width:2.6; }
-.a-hlfill { fill:var(--ok); opacity:.22; stroke:none; }
-.a-dash { stroke-dasharray:5 4; }
-.a-gaze { stroke-width:1.6; stroke:var(--muted); }
-.a-dot { fill:var(--ok); }
-.a-eye { fill:var(--fg); }
-.a-text { fill:var(--fg); font:500 12px system-ui,-apple-system,"Segoe UI",sans-serif; }
-.a-text.a-small { font-size:11px; }
-.a-text.a-hlt { fill:var(--ok); font-weight:700; }
+.ab { fill:var(--art-body); stroke:var(--art-body); } .abf { fill:var(--art-far); stroke:var(--art-far); }
+.ala { stroke:var(--art-arm); stroke-linecap:round; fill:none; } .aha { fill:var(--art-arm); }
+.al { stroke:var(--art-body); stroke-linecap:round; fill:none; } .alf { stroke:var(--art-far); stroke-linecap:round; fill:none; }
+.a-eyedot { fill:var(--art-eye); }
+.a-floor { stroke:var(--art-furn); stroke-width:2.5; stroke-linecap:round; } .a-shadow { fill:#000; opacity:.07; }
+.a-chair-back { stroke:var(--art-accent); stroke-width:14; stroke-linecap:round; fill:none; }
+.a-seat { fill:var(--art-accent); } .a-chair-stem { stroke:var(--art-furn); stroke-width:7; stroke-linecap:round; } .a-wheel { fill:var(--art-furn); }
+.a-desk { fill:var(--art-desk); stroke:var(--art-furn); stroke-width:1.5; } .a-key { fill:var(--art-furn); }
+.a-post { stroke:var(--art-furn); stroke-width:6; stroke-linecap:round; } .a-monbase { fill:var(--art-furn); }
+.a-monitor { fill:var(--art-monitor); stroke:var(--art-monitor); stroke-linejoin:round; stroke-width:3; } .a-screen { stroke:var(--art-screen); stroke-width:3; stroke-linecap:round; }
+.a-mat { fill:var(--art-mat); } .a-cone { fill:var(--ok); opacity:.13; }
+.a-joint { fill:var(--ok); stroke:#fff; stroke-width:2.5; }
+.a-hot1 { fill:var(--bad); opacity:.14; } .a-hot2 { fill:var(--bad); opacity:.26; } .a-hot3 { fill:var(--bad); opacity:.9; }
+.a-dashl { stroke:var(--ok); stroke-width:1.8; stroke-dasharray:6 5; }
+.a-arc { stroke:var(--ok); stroke-width:3; fill:none; stroke-linecap:round; }
+.a-dim { stroke:var(--ok); stroke-width:1.8; stroke-linecap:round; }
+.a-hlfill { fill:var(--ok); opacity:.25; } .a-hlring { stroke:var(--ok); stroke-width:2.5; fill:none; }
+.a-pill { fill:var(--card); stroke-width:1.6; } .a-ok { stroke:var(--ok); } .a-bad { stroke:var(--bad); }
+.a-leader { stroke-width:1.6; fill:none; } .a-okf { fill:var(--ok); stroke:none; } .a-badf { fill:var(--bad); stroke:none; }
+.a-ptext { fill:var(--fg); font:600 12px system-ui,-apple-system,"Segoe UI",sans-serif; }
+.a-capbar.a-badbar { fill:var(--bad); opacity:.14; } .a-capbar.a-goodbar { fill:var(--ok); opacity:.16; }
+.a-cap { font:700 20px system-ui,-apple-system,"Segoe UI",sans-serif; } .a-badt { fill:var(--bad); } .a-goodt { fill:var(--ok); }
 
 /* ---- walkthrough ---- */
 .tabwrap { position:relative; }
@@ -94,4 +100,4 @@ button.ghost:hover { color:var(--fg); }
 .guide-cards { display:grid; gap:18px; margin:12px 0; }
 .gcard h3 { font-size:15px; margin:10px 0 4px; } .gcard p { margin:4px 0; font-size:14px; }
 .gcard .points { font-size:14px; }
-.wizard .art svg { max-height:300px; }
+.wizard .art svg { max-height:340px; }

@@ -5,6 +5,9 @@ export const LM = { NOSE: 0, L_EAR: 7, R_EAR: 8, L_SHOULDER: 11, R_SHOULDER: 12,
                     L_WRIST: 15, R_WRIST: 16, L_HIP: 23, R_HIP: 24, L_KNEE: 25, R_KNEE: 26, L_ANKLE: 27, R_ANKLE: 28 };
 
 // Deviation from baseline that counts as "slipping" at sensitivity 1.
+/** Bump when `measure` changes meaning, so stale saved baselines are ignored instead of misfiring. */
+export const BASELINE_VERSION = 2;
+
 export const BASE_THRESH = { slouch: 0.12, lean: 0.15, tilt: 6 };
 
 const seen = p => p && (p.visibility ?? 1) >= 0.5;
@@ -15,10 +18,14 @@ export function measure(lm) {
   if (![nose, ls, rs].every(seen)) return null;
   const sw = Math.hypot(ls.x - rs.x, ls.y - rs.y);
   if (sw < 0.05) return null;
+  // Read the shoulder line left→right *in the image*. MediaPipe's "left" shoulder is the person's left,
+  // which sits on the image's right, so going L→R by landmark index puts the angle near ±180° where
+  // noise flips its sign and looks like a huge tilt.
+  const [a, b] = ls.x <= rs.x ? [ls, rs] : [rs, ls];
   return {
     neck: ((ls.y + rs.y) / 2 - nose.y) / sw,                      // head height above shoulders, in shoulder-widths
     size: sw,                                                     // shoulder width in frame ≈ distance to camera
-    tilt: Math.atan2(rs.y - ls.y, rs.x - ls.x) * 180 / Math.PI,   // shoulder line angle (deg)
+    tilt: Math.atan2(b.y - a.y, b.x - a.x) * 180 / Math.PI,       // shoulder line angle (deg), within ±90
   };
 }
 
@@ -33,7 +40,7 @@ export function deviation(baseline, m) {
   return {
     slouch: (baseline.neck - m.neck) / baseline.neck,  // + = head sinking toward shoulders
     lean: m.size / baseline.size - 1,                  // + = closer to the screen
-    tilt: Math.abs(m.tilt - baseline.tilt),
+    tilt: Math.abs(((m.tilt - baseline.tilt + 540) % 360) - 180),   // shortest angular distance
   };
 }
 
