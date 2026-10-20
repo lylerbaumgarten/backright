@@ -37,7 +37,7 @@
 
 ## Requirements
 
-macOS (Windows should largely work but is untested) · Node.js 22 or newer · a webcam. First run downloads Electron (~100 MB) and the pose model (~6 MB); after that the app needs no internet.
+macOS 13+ on Apple Silicon or Intel (Windows should largely work but is untested) · Node.js 22 or newer · a webcam. First run downloads Electron (~100 MB) and the pose model (~6 MB); after that the app needs no internet.
 
 ## Run it
 
@@ -50,9 +50,13 @@ npm start
 
 Re-run `npm run app` after code changes to refresh the installed copy.
 
+**Building installers:** `npm run release:mac` builds a disk image for Apple Silicon (`arm64`) and one for Intel (`x64`) into `dist/` (add `-- --arch=x64` for just one). The Intel Electron is downloaded from Electron's releases and checked against the checksum published in the `electron` package. The images are ad-hoc signed, not notarized, so macOS asks the user to confirm the first launch (see the instructions inside each image).
+
 **Start over (for testing):** `npm run fresh` quits the app, deletes saved settings and relaunches into the first-run walkthrough. Add `-- --camera` to also reset the macOS camera permission, `-- --all` to wipe the whole data folder.
 
 Grant camera access when asked. A tray/menu-bar icon keeps it running in the background; the window hides when closed.
+
+**Troubleshooting:** run the app from Terminal with logging on — `BACKRIGHT_DEBUG=1 /Applications/BackRight.app/Contents/MacOS/Electron` — to see messages such as how long the pose model took to load and whether it runs on the GPU or the CPU.
 
 ## Menu-bar icon = status
 

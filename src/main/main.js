@@ -184,6 +184,8 @@ function createPanel() {
     width: 760, height: 820, show: false, title: "BackRight", backgroundColor: "#f6f5f2",
     webPreferences: { preload: path.join(__dirname, "preload.js"), contextIsolation: true, sandbox: true, backgroundThrottling: false },
   });
+  // BACKRIGHT_DEBUG=1: print the window's console messages (model load time, GPU/CPU delegate, errors) to the terminal.
+  if (process.env.BACKRIGHT_DEBUG) panel.webContents.on("console-message", (e, ...old) => console.log("[renderer]", e.message ?? old[1]));
   panel.loadURL("app://local/index.html");
   panel.once("ready-to-show", () => panel.show());
   panel.on("close", e => { if (!app.isQuitting) { e.preventDefault(); panel.hide(); } });
@@ -234,13 +236,13 @@ function updateTray() {
   if (!tray) return;
   const { state, tip } = currentTray();
   const __img = trayImage(ICON[state]);
-  if (process.env.POSTURE_DEBUG) console.log(`[tray] ${state} — ${tip} | image ${ICON[state]} empty=${__img.isEmpty()} size=${JSON.stringify(__img.getSize())} template=${__img.isTemplateImage()}`);
+  if (process.env.BACKRIGHT_DEBUG) console.log(`[tray] ${state} — ${tip} | image ${ICON[state]} empty=${__img.isEmpty()} size=${JSON.stringify(__img.getSize())} template=${__img.isTemplateImage()}`);
   tray.setImage(__img);
   tray.setToolTip(tip);
   // Dock icon = app icon + status dot (green monitoring · amber nudging · grey snoozed · none off).
   if (process.platform === "darwin") {
     const dock = dockImage(DOCK[state]);
-    if (process.env.POSTURE_DEBUG) console.log(`[dock] ${DOCK[state]} empty=${dock.isEmpty()} size=${JSON.stringify(dock.getSize())}`);
+    if (process.env.BACKRIGHT_DEBUG) console.log(`[dock] ${DOCK[state]} empty=${dock.isEmpty()} size=${JSON.stringify(dock.getSize())}`);
     app.dock?.setIcon(dock);
   }
 }
@@ -270,7 +272,7 @@ function sendToPanel(ch, payload) { if (panel && !panel.isDestroyed()) panel.web
 // ---- IPC ----
 ipcMain.handle("settings:get", () => settings);
 ipcMain.handle("settings:set", (_e, patch) => {
-  if (process.env.POSTURE_DEBUG) console.log(`[settings:set] ${Date.now() % 100000} ${JSON.stringify(patch).slice(0, 120)}`);
+  if (process.env.BACKRIGHT_DEBUG) console.log(`[settings:set] ${Date.now() % 100000} ${JSON.stringify(patch).slice(0, 120)}`);
   settings = { ...settings, ...patch };
   saveSettings(); rebuildTray(); pushAllOverlays();
   return settings;

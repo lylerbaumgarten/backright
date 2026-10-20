@@ -10,76 +10,44 @@
 //                                will ask for camera access again)
 //
 // The bundle is signed once, when created, and later syncs only replace Contents/Resources/app. Re-signing would
-// change the app's identity and make macOS forget the camera permission every time.
+// change the app's identity and make macOS forget the camera permission every time. (Distributable images are built
+// by release-mac.mjs, which signs the finished bundle properly.)
 import { execFileSync, spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, cpSync, rmSync, readFileSync, writeFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
+import { existsSync, mkdirSync, cpSync, rmSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { root, APP_NAME, electronDist, configureBundle, syncAppCode, adhocSign } from "./lib/bundle.mjs";
 
 if (process.platform !== "darwin") { console.error("dev-app is macOS-only; use `npm start` elsewhere."); process.exit(1); }
 
-const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const args = new Set(process.argv.slice(2));
-const app = path.join(root, "build/BackRight.app");
-const res = path.join(app, "Contents/Resources");
-const plist = path.join(app, "Contents/Info.plist");
-const pkg = JSON.parse(readFileSync(path.join(root, "package.json"), "utf8"));
-const pb = (...cmd) => spawnSync("/usr/libexec/PlistBuddy", ["-c", cmd.join(" "), plist], { stdio: "ignore" });
-const setKey = (key, type, value) => { if (pb(`Set :${key} ${value}`).status !== 0) pb(`Add :${key} ${type} ${value}`); };
-
-// Electron's binary is downloaded lazily (npm doesn't always run its installer) — make sure it's there before copying it.
-if (!existsSync(path.join(root, "node_modules/electron/dist/Electron.app"))) {
-  console.log("Downloading the Electron binary (one time)…");
-  execFileSync("node", [path.join(root, "node_modules/electron/install.js")], { stdio: "inherit" });
-}
-
-// icon assets are generated, not hand-made
-if (!existsSync(path.join(root, "assets/icon.icns"))) execFileSync("node", [path.join(root, "scripts/make-icon.mjs")], { stdio: "inherit" });
+const app = path.join(root, `build/${APP_NAME}.app`);
+const dist = await electronDist();
 
 // 1. the bundle (once)
 if (args.has("--rebuild")) rmSync(app, { recursive: true, force: true });
-if (!existsSync(path.join(res, "icon.icns"))) {
-  console.log("Creating build/BackRight.app (one time)…");
+if (!existsSync(path.join(app, "Contents/Resources/icon.icns"))) {
+  console.log(`Creating build/${APP_NAME}.app (one time)…`);
   rmSync(app, { recursive: true, force: true });
   mkdirSync(path.dirname(app), { recursive: true });
-  cpSync(path.join(root, "node_modules/electron/dist/Electron.app"), app, { recursive: true, verbatimSymlinks: true });
-  rmSync(path.join(res, "electron.icns"), { force: true });
-  cpSync(path.join(root, "assets/icon.icns"), path.join(res, "icon.icns"));
-  setKey("CFBundleName", "string", "BackRight"); setKey("CFBundleDisplayName", "string", "BackRight");
-  setKey("CFBundleIdentifier", "string", "com.lylebaumgarten.backright");
-  setKey("CFBundleIconFile", "string", "icon.icns");
-  setKey("CFBundleShortVersionString", "string", pkg.version); setKey("CFBundleVersion", "string", pkg.version);
-  setKey("NSCameraUsageDescription", "string", "BackRight uses your camera to check your posture. Images are analysed on this Mac and never stored or sent anywhere.");
-  pb("Delete :NSMicrophoneUsageDescription");
-  mkdirSync(path.join(res, "app"), { recursive: true });   // present at signing time, contents synced below
-  execFileSync("codesign", ["--force", "--deep", "--sign", "-", app], { stdio: "inherit" });
+  cpSync(path.join(dist, "Electron.app"), app, { recursive: true, verbatimSymlinks: true });
+  configureBundle(app);
+  adhocSign(app);
 }
 
-// 2. sync the app code into the bundle (no node_modules: the app has no runtime dependencies)
-const dest = path.join(res, "app");
-rmSync(dest, { recursive: true, force: true }); mkdirSync(dest, { recursive: true });
-for (const dir of ["src", "vendor", "assets"]) cpSync(path.join(root, dir), path.join(dest, dir), { recursive: true });
-// licences travel with the app (MIT/Apache require it when redistributing)
-for (const f of ["LICENSE", "THIRD_PARTY_NOTICES.md"]) cpSync(path.join(root, f), path.join(dest, f));
-cpSync(path.join(root, "LICENSES"), path.join(dest, "LICENSES"), { recursive: true });
-const electronDist = path.join(root, "node_modules/electron/dist");
-cpSync(path.join(electronDist, "LICENSE"), path.join(res, "LICENSE.electron"));
-cpSync(path.join(electronDist, "LICENSES.chromium.html"), path.join(res, "LICENSES.chromium.html"));
-writeFileSync(path.join(dest, "package.json"), JSON.stringify({ name: pkg.name, productName: pkg.productName, version: pkg.version, main: pkg.main }, null, 2));
-
-cpSync(path.join(root, "assets/icon.icns"), path.join(res, "icon.icns"));   // keep the static icon current (Finder/Launchpad)
-spawnSync("touch", [app]);                                                       // nudge macOS to refresh its icon cache
+// 2. sync the latest code into the bundle
+syncAppCode(app, dist);
+spawnSync("touch", [app]);   // nudge macOS to refresh its icon cache
 
 // 3. quit any running copy (it owns the menu-bar icon), optionally install, launch
 if (args.has("--no-launch")) { console.log(`Built ${app} (not launched)`); process.exit(0); }
-spawnSync("pkill", ["-f", "BackRight.app/Contents/MacOS"], { stdio: "ignore" });
+spawnSync("pkill", ["-f", `${APP_NAME}.app/Contents/MacOS`], { stdio: "ignore" });
 await new Promise(r => setTimeout(r, 800));
 let target = app;
 if (args.has("--install")) {
   const apps = path.join(os.homedir(), "Applications");
   mkdirSync(apps, { recursive: true });
-  target = path.join(apps, "BackRight.app");
+  target = path.join(apps, `${APP_NAME}.app`);
   rmSync(target, { recursive: true, force: true });
   cpSync(app, target, { recursive: true, verbatimSymlinks: true });
   console.log(`Installed ${target}`);
