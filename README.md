@@ -4,6 +4,37 @@ A small desktop app that watches your posture through the webcam and gives a fai
 
 > Status: early prototype (v0.1). Electron, macOS-first; Windows should work but is untested.
 
+## Screenshots
+
+<table>
+  <tr>
+    <td width="50%"><img src="docs/screenshots/01-welcome.png" alt="Welcome: pick sitting or standing"><br><sub><b>1.</b> Welcome — sitting or standing, each calibrated separately</sub></td>
+    <td width="50%"><img src="docs/screenshots/02-camera-privacy.png" alt="Camera privacy step with the turn-off-Wi-Fi test"><br><sub><b>2.</b> Camera &amp; privacy — what happens to the video, and a Wi-Fi-off test you can run yourself</sub></td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/03-calibrate.png" alt="Calibrate screen with a desk-setup card"><br><sub><b>3.</b> Calibrate — with the optional desk-setup guide one click away</sub></td>
+    <td><img src="docs/screenshots/04-guide-overview.png" alt="Desk setup guide: slouched versus upright"><br><sub><b>4.</b> Desk setup guide — what you're aiming for</sub></td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/06-guide-arms.png" alt="Guide page: arms and wrists"><br><sub><b>5.</b> One page per step (sitting)…</sub></td>
+    <td><img src="docs/screenshots/09-guide-standing-spine.png" alt="Guide page: standing posture line"><br><sub><b>6.</b> …and a separate set for standing desks</sub></td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/10-monitor.png" alt="Monitor tab with settings"><br><sub><b>7.</b> Monitor — sensitivity, delay and how often to check</sub></td>
+    <td><img src="docs/screenshots/12-privacy-tab.png" alt="Privacy tab"><br><sub><b>8.</b> Privacy — always one tab away</sub></td>
+  </tr>
+</table>
+
+**Status at a glance** — the menu-bar icon and the Dock icon both follow what the app is doing (illustration composed from the app's real icon files):
+
+<img src="docs/screenshots/13-status-icons.png" alt="Status icons: monitoring, nudging, snoozed, off" width="800">
+
+**The nudge** — a faint glow around the screen edges plus a small pill with *Pause* and *Settings*. It never steals focus and stays out of screenshots (illustration: the app's real overlay styling over a mock desktop):
+
+<img src="docs/screenshots/14-nudge-illustration.png" alt="The nudge: amber edge glow and a pill with Pause and Settings" width="800">
+
+<sub>Screenshots are generated from the running app by `npm run docs:screenshots` (macOS). They never switch the camera on, so there is no live camera preview among them.</sub>
+
 ## Requirements
 
 macOS (Windows should largely work but is untested) · Node.js 22 or newer · a webcam. First run downloads Electron (~100 MB) and the pose model (~6 MB); after that the app needs no internet.

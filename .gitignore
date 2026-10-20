@@ -4,3 +4,4 @@ dist/
 out/
 .DS_Store
 build/
+src/renderer/_docs-*.html
