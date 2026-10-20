@@ -7,15 +7,15 @@
     "start": "electron .",
     "vendor": "node scripts/vendor.mjs",
     "postinstall": "node scripts/vendor.mjs",
-    "test": "node --test test/",
+    "test": "node --test",
     "dev:app": "node scripts/dev-app.mjs",
     "fresh": "node scripts/fresh.mjs",
     "app": "node scripts/dev-app.mjs --install",
     "icon": "node scripts/make-icon.mjs"
   },
   "keywords": [],
-  "author": "",
-  "license": "UNLICENSED",
+  "author": "Lyle Baumgarten",
+  "license": "MIT",
   "type": "commonjs",
   "devDependencies": {
     "@mediapipe/tasks-vision": "^0.10.14",

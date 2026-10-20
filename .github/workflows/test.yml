@@ -1,0 +1,15 @@
+name: tests
+on:
+  push:
+  pull_request:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      # --ignore-scripts: the tests are pure logic; skip downloading Electron and the pose model.
+      - run: npm ci --ignore-scripts
+      - run: npm test

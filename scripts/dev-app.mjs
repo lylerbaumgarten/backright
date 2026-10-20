@@ -5,6 +5,7 @@
 //   npm run dev:app              rebuild if needed, sync the latest code into the bundle, launch it
 //   npm run app                  same, then also install it to ~/Applications/Posture.app and launch that copy
 //   npm run dev:app -- --debug   launch with a DevTools remote-debugging port (9333)
+//   npm run dev:app -- --no-launch  build/sync only (no quit, no launch) — used for CI and clean-clone checks
 //   npm run dev:app -- --rebuild throw the bundle away and recreate it (this changes its signature, so macOS
 //                                will ask for camera access again)
 //
@@ -53,12 +54,19 @@ if (!existsSync(path.join(res, "icon.icns"))) {
 const dest = path.join(res, "app");
 rmSync(dest, { recursive: true, force: true }); mkdirSync(dest, { recursive: true });
 for (const dir of ["src", "vendor", "assets"]) cpSync(path.join(root, dir), path.join(dest, dir), { recursive: true });
+// licences travel with the app (MIT/Apache require it when redistributing)
+for (const f of ["LICENSE", "THIRD_PARTY_NOTICES.md"]) cpSync(path.join(root, f), path.join(dest, f));
+cpSync(path.join(root, "LICENSES"), path.join(dest, "LICENSES"), { recursive: true });
+const electronDist = path.join(root, "node_modules/electron/dist");
+cpSync(path.join(electronDist, "LICENSE"), path.join(res, "LICENSE.electron"));
+cpSync(path.join(electronDist, "LICENSES.chromium.html"), path.join(res, "LICENSES.chromium.html"));
 writeFileSync(path.join(dest, "package.json"), JSON.stringify({ name: pkg.name, productName: pkg.productName, version: pkg.version, main: pkg.main }, null, 2));
 
 cpSync(path.join(root, "assets/icon.icns"), path.join(res, "icon.icns"));   // keep the static icon current (Finder/Launchpad)
 spawnSync("touch", [app]);                                                       // nudge macOS to refresh its icon cache
 
 // 3. quit any running copy (it owns the menu-bar icon), optionally install, launch
+if (args.has("--no-launch")) { console.log(`Built ${app} (not launched)`); process.exit(0); }
 spawnSync("pkill", ["-f", "Posture.app/Contents/MacOS"], { stdio: "ignore" });
 await new Promise(r => setTimeout(r, 800));
 let target = app;
