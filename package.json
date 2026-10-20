@@ -1,0 +1,22 @@
+{
+  "name": "posture",
+  "version": "0.1.0",
+  "description": "On-device posture monitor with a system-wide screen nudge",
+  "main": "src/main/main.js",
+  "scripts": {
+    "start": "electron .",
+    "vendor": "node scripts/vendor.mjs",
+    "postinstall": "node scripts/vendor.mjs",
+    "test": "node --test test/"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "UNLICENSED",
+  "type": "commonjs",
+  "devDependencies": {
+    "@mediapipe/tasks-vision": "^0.10.14",
+    "electron": "^44.9.1"
+  },
+  "productName": "Posture",
+  "private": true
+}

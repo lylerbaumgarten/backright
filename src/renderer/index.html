@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Posture</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main>
+  <header>
+    <h1>Posture</h1>
+    <div class="seg" id="modeSeg" role="group" aria-label="Posture mode">
+      <button data-mode="sit">Sitting</button>
+      <button data-mode="stand">Standing</button>
+    </div>
+  </header>
+
+  <nav class="tabs" id="tabs">
+    <button data-tab="monitor" class="on">Monitor</button>
+    <button data-tab="setup">Desk setup</button>
+    <button data-tab="privacy">Privacy</button>
+  </nav>
+
+  <!-- shared camera preview: only visible while it's useful -->
+  <div class="stage" id="stage" hidden>
+    <video id="video" playsinline muted></video>
+    <canvas id="overlay" width="640" height="480"></canvas>
+    <div class="countdown" id="countdown" hidden></div>
+  </div>
+
+  <section id="tab-monitor">
+    <div class="card">
+      <div class="status"><span class="dot" id="dot"></span><span id="statusText">Not monitoring</span></div>
+      <p class="hint" id="calHint"></p>
+      <div class="row">
+        <button class="primary" id="toggleMon">Start monitoring</button>
+        <button id="calibrate">Calibrate</button>
+        <button id="togglePreview">Show preview</button>
+        <button id="testNudge">Test nudge</button>
+      </div>
+      <div class="metrics">
+        <div class="metric">Slouch<b id="mSlouch">–</b></div>
+        <div class="metric">Leaning in<b id="mLean">–</b></div>
+        <div class="metric">Shoulder tilt<b id="mTilt">–</b></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Settings</h2>
+      <label>Sensitivity <span id="sensVal"></span><input type="range" id="sens" min="0.5" max="2" step="0.05"></label>
+      <label>Nudge after <span id="delayVal"></span> of slipping<input type="range" id="delay" min="1" max="30" step="1"></label>
+      <label>Check posture every <span id="everyVal"></span><input type="range" id="every" min="0.2" max="5" step="0.1"></label>
+      <p class="hint">A slower check uses less CPU and battery. Posture changes slowly, so every half second or slower is plenty.</p>
+      <div class="row">
+        <label class="inline"><input type="checkbox" id="glowOn"> Screen glow</label>
+        <label class="inline"><input type="checkbox" id="pillOn"> Reminder pill</label>
+      </div>
+    </div>
+  </section>
+
+  <section id="tab-setup" hidden>
+    <div class="card">
+      <h2 id="setupTitle">Desk setup</h2>
+      <p id="setupIntro" class="hint"></p>
+      <ol id="steps" class="steps"></ol>
+      <div class="card inner" id="liveCheck" hidden>
+        <h3>Live check</h3>
+        <p class="hint">Uses your camera for what it can see. Anything out of frame falls back to the checklist above.</p>
+        <ul id="checkList" class="checks"></ul>
+      </div>
+      <div class="row">
+        <button id="startLive">Run live check</button>
+        <button class="primary" id="setupDone">Looks good — I'm set up</button>
+      </div>
+      <div id="afterSetup" class="notice" hidden>
+        <b>You're set up.</b> Now sit (or stand) the way you want to hold — we'll record that as your alignment.
+        <div class="row"><button class="primary" id="goCalibrate">Calibrate my alignment</button></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="tab-privacy" hidden>
+    <div class="card prose">
+      <h2>Your camera stays yours</h2>
+      <ul>
+        <li><b>Everything runs on this computer.</b> The pose model ships inside the app. No account, no server.</li>
+        <li><b>Works with no internet.</b> The app blocks every network request and its security policy forbids connections outside itself — you can pull the cable and it behaves the same.</li>
+        <li><b>No pictures or video are stored.</b> Each camera frame is analysed in memory and thrown away. Only a handful of numbers (head height, shoulder width, tilt) survive, and only your calibration baseline is saved to disk.</li>
+        <li><b>The camera is only on when needed</b> — while monitoring, calibrating or running the live setup check. Pause monitoring and the camera light goes off.</li>
+        <li><b>Verify it:</b> the app is open source; <code>npm test</code> and the README explain how to confirm there is no network or storage code path for images.</li>
+      </ul>
+    </div>
+  </section>
+</main>
+<script type="module" src="app.js"></script>
+</body>
+</html>

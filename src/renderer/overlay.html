@@ -1,0 +1,23 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Posture overlay</title>
+<style>
+  html, body { margin:0; height:100%; background:transparent; overflow:hidden; pointer-events:none; user-select:none; }
+  /* Faint, slow edge glow — meant to be noticed in peripheral vision, not to interrupt. */
+  #glow { position:fixed; inset:0; opacity:0; transition:opacity 1.6s ease;
+          box-shadow: inset 0 0 140px 26px rgba(240,162,58,.34); }
+  #glow.on { opacity:1; }
+  #pill { position:fixed; top:18px; left:50%; transform:translate(-50%,-90px); opacity:0;
+          background:rgba(240,162,58,.95); color:#1a1200; font:600 14px/1 system-ui,-apple-system,sans-serif;
+          padding:9px 18px; border-radius:999px; transition:transform .7s ease, opacity .7s ease; }
+  #pill.on { transform:translate(-50%,0); opacity:1; }
+</style>
+</head>
+<body>
+<div id="glow"></div>
+<div id="pill">Sit tall — head back, shoulders down</div>
+<script type="module" src="overlay.js"></script>
+</body>
+</html>
