@@ -32,10 +32,12 @@ Hover it for a tooltip with the same in words; the menu's top line says it too.
 
 ## How to use it
 
-1. **Pick Sitting or Standing** (top right, or from the tray). Each mode has its own calibration.
-2. **Desk setup** tab — a short guide to screen height/distance, chair, arms and legs, with an optional live camera check for the parts it can see.
-3. **Monitor → Calibrate** — hold the posture you want to keep for a few seconds. That becomes your baseline.
+1. **Welcome** — pick Sitting or Standing (each has its own calibration).
+2. **Camera & privacy** — what happens to the video, with a live preview you can test with Wi-Fi off.
+3. **Calibrate** — hold the posture you want to keep for a few seconds. That's your baseline. Not sure your desk is set up well? Open the **Desk setup guide** from this screen: an illustrated sub-page (overview, one page per step, and a camera check) that returns you to calibration.
 4. **Start monitoring.** If you drift from the baseline (head dropping toward your shoulders, leaning toward the screen, shoulders uneven) for a few seconds, a soft glow appears around every screen. It fades when you correct.
+
+The guide is also in the **Desk setup** tab any time, and a reminder banner on the Monitor tab appears until you've been through it.
 
 ## Privacy — how it's enforced
 
