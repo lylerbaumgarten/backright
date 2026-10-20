@@ -7,6 +7,7 @@ const on = (ch, fn) => { const h = (_e, v) => fn(v); ipcRenderer.on(ch, h); retu
 contextBridge.exposeInMainWorld("posture", {
   getSettings: () => ipcRenderer.invoke("settings:get"),
   setSettings: patch => ipcRenderer.invoke("settings:set", patch),
+  privacyStats: () => ipcRenderer.invoke("privacy:stats"),
   requestCamera: () => ipcRenderer.invoke("camera:request"),
   openCameraSettings: () => ipcRenderer.send("camera:open-settings"),
   relaunch: () => ipcRenderer.send("app:relaunch"),

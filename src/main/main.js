@@ -51,10 +51,11 @@ function saveSettings() {
 }
 
 // ---- privacy: block every request that isn't our own app:// content ----
+let blockedRequests = 0;   // outside connections the app tried to make (all blocked) — shown in the onboarding privacy step
 function lockDownNetwork(ses) {
   ses.webRequest.onBeforeRequest((details, cb) => {
     const ok = details.url.startsWith("app://") || details.url.startsWith("devtools://") || details.url.startsWith("blob:") || details.url.startsWith("data:");
-    if (!ok) console.warn("[privacy] blocked network request:", details.url);
+    if (!ok) { blockedRequests++; console.warn("[privacy] blocked network request:", details.url); }
     cb({ cancel: !ok });
   });
   ses.webRequest.onHeadersReceived((details, cb) => {
@@ -274,6 +275,7 @@ ipcMain.handle("settings:set", (_e, patch) => {
   saveSettings(); rebuildTray(); pushAllOverlays();
   return settings;
 });
+ipcMain.handle("privacy:stats", () => ({ blocked: blockedRequests }));
 ipcMain.handle("camera:request", async () => {
   if (process.platform !== "darwin") return "granted";
   const status = systemPreferences.getMediaAccessStatus("camera");   // granted | denied | restricted | not-determined

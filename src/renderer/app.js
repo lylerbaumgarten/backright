@@ -17,6 +17,7 @@ let timer = null, lastTick = 0;
 let tab = "monitor";                // monitor | setup | privacy | onboard (the first-run walkthrough)
 let cameraBlocked = false;
 let notice = "";                    // transient message shown under the status (survives re-renders)
+let frames = 0;                     // detections run since launch (shown in the privacy step)
 let hintTimer = null, hintPersist = false, renderedSetupMode = null;
 
 const COUNTDOWN_MS = 4000, SAMPLE_MS = 3000, MIN_SAMPLES = 4;
@@ -77,6 +78,7 @@ function loop() {
 }
 
 function handle(lm) {
+  frames++;
   if (!stage.hidden) drawSkeleton(canvas, lm);
   const now = performance.now();
   const dt = lastTick ? now - lastTick : 500; lastTick = now;
@@ -173,6 +175,13 @@ function renderChecks(result) {
   document.querySelectorAll(".live-checklist").forEach(el => { el.innerHTML = html; });
 }
 
+// The camera preview normally sits above the tabs; the walkthrough's privacy step moves it into its own card.
+const stageHome = stage.parentNode, stageNext = stage.nextSibling;
+function placeStage(slot) {
+  if (slot) { if (stage.parentNode !== slot) slot.appendChild(stage); }
+  else if (stage.parentNode !== stageHome) stageHome.insertBefore(stage, stageNext);
+}
+
 // ---------- pointer to the Desk setup tab ----------
 function showTabHint(text, { persist = false } = {}) {
   $("tabHintText").textContent = text;
@@ -190,6 +199,7 @@ function render() {
   document.querySelectorAll("#modeSeg button").forEach(b => b.classList.toggle("on", b.dataset.mode === settings.mode));
   document.querySelectorAll("#tabs button").forEach(b => b.classList.toggle("on", !inWizard && b.dataset.tab === tab));
   for (const t of ["onboard", "monitor", "setup", "privacy"]) $("tab-" + t).hidden = t !== tab;
+  if (!inWizard) placeStage(null);                   // never leave the preview parked inside a hidden section
   $("tabs").classList.toggle("locked", inWizard);   // can't wander off mid-walkthrough; "Close" is the exit
   $("modeSeg").hidden = inWizard;
 
@@ -226,6 +236,9 @@ const wizard = createWizard($("tab-onboard"), {
   live: () => setupLive,
   setLive: v => { if (setupLive !== v) { setupLive = v; render(); syncCamera(); } },
   toggleLive: () => { setupLive = !setupLive; if (setupLive) renderChecks(null); syncCamera(); },
+  stats: () => ({ frames }),
+  privacyStats: () => window.posture.privacyStats(),
+  placeStage,
   setMode: async m => { if (m !== settings.mode) { monitor.reset(); window.posture.setWarning(false); await save({ mode: m }); } },
   markSetupDone: () => save({ setupDone: { ...settings.setupDone, [settings.mode]: true } }),
   calibrate: cb => startCalibration(cb),

@@ -44,6 +44,7 @@ Hover it for a tooltip with the same in words; the menu's top line says it too.
 - **No frames kept.** A frame is analysed in memory and dropped. Only landmark-derived numbers exist afterwards. The only file written is `settings.json` (your preferences and calibration numbers) in the app's user-data folder.
 - **Camera only when needed.** The camera stream is opened for monitoring, calibration or the live setup check, and closed otherwise, so the camera light goes off when paused or when the screen is locked.
 - **Tiny bridge.** The renderer talks to the main process through a preload with a handful of settings/boolean calls — there's no channel that carries image data.
+- **Prove it yourself.** The onboarding's privacy step shows a live camera preview with counters — frames analysed on this Mac, outside connections made (always 0, they're all blocked) and Wi-Fi state. Turn off Wi-Fi and watch the posture check keep running.
 - **Tripwire tests.** `npm test` fails if source starts using frame-capture, recording, network or storage APIs (`test/privacy.test.mjs`).
 
 ## Layout
