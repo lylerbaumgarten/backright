@@ -5,13 +5,14 @@
 <title>Posture overlay</title>
 <style>
   html, body { margin:0; height:100%; background:transparent; overflow:hidden; pointer-events:none; user-select:none; }
-  /* Faint, slow edge glow — meant to be noticed in peripheral vision, not to interrupt. */
-  #glow { position:fixed; inset:0; opacity:0; transition:opacity 1.6s ease;
-          box-shadow: inset 0 0 140px 26px rgba(240,162,58,.34); }
+  /* Each overlay window is one thin strip of the screen edge. #glow is sized to the *whole* screen and offset
+     so this strip shows its slice of one continuous edge glow. Faint and slow — peripheral vision, not interruption. */
+  #glow { position:fixed; opacity:0; transition:opacity 1.6s ease;
+          box-shadow: inset 0 0 100px 10px rgba(240,162,58,.42); }
   #glow.on { opacity:1; }
-  #pill { position:fixed; top:18px; left:50%; transform:translate(-50%,-90px); opacity:0;
+  #pill { position:fixed; top:18px; transform:translate(-50%,-90px); opacity:0; display:none;
           background:rgba(240,162,58,.95); color:#1a1200; font:600 14px/1 system-ui,-apple-system,sans-serif;
-          padding:9px 18px; border-radius:999px; transition:transform .7s ease, opacity .7s ease; }
+          padding:9px 18px; border-radius:999px; transition:transform .7s ease, opacity .7s ease; white-space:nowrap; }
   #pill.on { transform:translate(-50%,0); opacity:1; }
 </style>
 </head>

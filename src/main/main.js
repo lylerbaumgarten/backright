@@ -37,7 +37,7 @@ const DEFAULTS = {
 
 let settings = { ...DEFAULTS };
 let panel, tray;
-const overlays = new Map(); // displayId -> BrowserWindow
+const overlays = new Map(); // displayId -> { sig, wins: BrowserWindow[] } (edge strips)
 let warning = false;
 
 // ---- settings: numbers and toggles only. Never any image data. ----
@@ -82,53 +82,77 @@ function registerAppProtocol() {
   });
 }
 
-// ---- overlay: one transparent, click-through window per display ----
-function overlayFor(display) {
-  const { x, y, width, height } = display.bounds;
+// ---- overlay ----
+// The nudge is drawn with four thin edge strips per display instead of one full-screen window. A full-screen
+// window is what macOS's window-capture mode (⇧⌘4 then Space) and screenshot tools pick as "the window under
+// the cursor" — and then refuse to capture. With strips, the middle of the screen has no overlay window at all,
+// so ordinary windows there stay capturable. (Strips also stay out of screenshots/recordings via content protection.)
+const STRIP = 120;   // px; the glow fades out within this
+function stripsFor(b) {
+  const { x, y, width: w, height: h } = b, T = STRIP;
+  return [
+    { x, y, width: w, height: T, ox: 0, oy: 0, pill: 1 },                              // top (also carries the pill)
+    { x, y: y + h - T, width: w, height: T, ox: 0, oy: h - T, pill: 0 },               // bottom
+    { x, y: y + T, width: T, height: h - 2 * T, ox: 0, oy: T, pill: 0 },               // left
+    { x: x + w - T, y: y + T, width: T, height: h - 2 * T, ox: w - T, oy: T, pill: 0 },// right
+  ].map(r => ({ ...r, sw: w, sh: h }));
+}
+
+function overlayStrip(r) {
   const win = new BrowserWindow({
-    x, y, width, height, transparent: true, frame: false, hasShadow: false, resizable: false, movable: false,
+    x: r.x, y: r.y, width: r.width, height: r.height, transparent: true, frame: false, hasShadow: false, resizable: false, movable: false,
     focusable: false, skipTaskbar: true, show: false, alwaysOnTop: true, fullscreenable: false, enableLargerThanScreen: true,
     webPreferences: { preload: path.join(__dirname, "preload.js"), contextIsolation: true, sandbox: true, backgroundThrottling: false },
   });
   win.setAlwaysOnTop(true, "screen-saver");
   win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
   win.setIgnoreMouseEvents(true, { forward: true });
-  // Keep this full-screen window out of screenshots / screen recordings / screen shares (macOS + Windows).
-  win.setContentProtection(true);
-  win.loadURL("app://local/overlay.html");
+  win.setContentProtection(true);   // keep it out of screenshots / screen recordings / screen shares (macOS + Windows)
+  win.loadURL(`app://local/overlay.html?sw=${r.sw}&sh=${r.sh}&ox=${r.ox}&oy=${r.oy}&pill=${r.pill}`);
   win.webContents.once("did-finish-load", () => { pushOverlayState(win); if (warning) win.showInactive(); });
   return win;
 }
 
+const allOverlayWins = () => [...overlays.values()].flatMap(o => o.wins).filter(w => !w.isDestroyed());
+
 function syncOverlays() {
-  const live = new Set(screen.getAllDisplays().map(d => d.id));
-  for (const [id, win] of overlays) if (!live.has(id)) { win.destroy(); overlays.delete(id); }
-  for (const d of screen.getAllDisplays()) {
-    const existing = overlays.get(d.id);
-    if (existing) existing.setBounds(d.bounds);
-    else overlays.set(d.id, overlayFor(d));
+  const displays = screen.getAllDisplays(), live = new Set(displays.map(d => d.id));
+  for (const [id, o] of overlays) if (!live.has(id)) { o.wins.forEach(w => !w.isDestroyed() && w.destroy()); overlays.delete(id); }
+  for (const d of displays) {
+    const sig = JSON.stringify(d.bounds), existing = overlays.get(d.id);
+    if (existing?.sig === sig) continue;
+    existing?.wins.forEach(w => !w.isDestroyed() && w.destroy());
+    overlays.set(d.id, { sig, wins: stripsFor(d.bounds).map(overlayStrip) });
   }
 }
 
 function pushOverlayState(win) {
   if (!win.isDestroyed()) win.webContents.send("overlay:state", { warning, glow: settings.glow, pill: settings.pill });
 }
-const pushAllOverlays = () => overlays.forEach(pushOverlayState);
+const pushAllOverlays = () => allOverlayWins().forEach(pushOverlayState);
 
-// The overlay windows only exist on screen while a nudge is showing; the rest of the time they're hidden,
-// so a full-screen transparent window is never sitting over other apps (or confusing screen capture).
-let hideTimer = null;
+// Overlay windows are only on screen while a nudge is showing; the rest of the time they're hidden.
+let hideTimer = null, snoozeUntil = 0, snoozeTimer = null;
 function setWarning(on) {
+  if (on && Date.now() < snoozeUntil) on = false;      // snoozed
   if (warning === on) return;
   warning = on;
   clearTimeout(hideTimer);
   if (on) {
-    overlays.forEach(w => { if (!w.isDestroyed()) w.showInactive(); });
+    allOverlayWins().forEach(w => w.showInactive());
     setTimeout(pushAllOverlays, 30);                    // let the window paint hidden-state first so the fade plays
   } else {
     pushAllOverlays();                                  // fade out…
-    hideTimer = setTimeout(() => overlays.forEach(w => { if (!warning && !w.isDestroyed()) w.hide(); }), 2200);   // …then hide
+    hideTimer = setTimeout(() => allOverlayWins().forEach(w => { if (!warning) w.hide(); }), 2200);   // …then hide
   }
+}
+
+function snooze(minutes) {
+  clearTimeout(snoozeTimer);
+  snoozeUntil = minutes ? Date.now() + minutes * 60000 : 0;
+  setWarning(false);
+  if (minutes) snoozeTimer = setTimeout(() => { snoozeUntil = 0; rebuildTray(); }, minutes * 60000);
+  rebuildTray();
 }
 
 // ---- panel (control window; also hosts detection, so it must keep running when hidden) ----
@@ -163,6 +187,10 @@ function rebuildTray() {
   tray.setContextMenu(Menu.buildFromTemplate([
     { label: settings.monitoring ? "Monitoring: on" : "Monitoring: off", enabled: false },
     { label: settings.monitoring ? "Pause monitoring" : "Start monitoring", click: () => sendToPanel("cmd:toggle-monitoring") },
+    { type: "separator" },
+    snoozeUntil > Date.now()
+      ? { label: `Nudges snoozed until ${new Date(snoozeUntil).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })} — resume`, click: () => snooze(0) }
+      : { label: "Snooze nudges", submenu: [5, 30, 60].map(m => ({ label: m === 60 ? "1 hour" : `${m} minutes`, click: () => snooze(m) })) },
     { type: "separator" },
     { label: "Sitting", type: "radio", checked: settings.mode === "sit", click: () => setMode("sit") },
     { label: "Standing", type: "radio", checked: settings.mode === "stand", click: () => setMode("stand") },
