@@ -2,7 +2,22 @@
 
 **BackRight** is a small desktop app that watches your posture through the webcam and gives a faint, screen-wide nudge when you slip. Works for sitting and standing desks. **Everything runs on your computer — no images are stored or sent anywhere.**
 
-> Status: early prototype (v0.1). Electron, macOS-first; Windows should work but is untested.
+> Status: early release (v0.1). Electron, macOS-first (Apple Silicon and Intel); Windows should largely work but is untested.
+
+## Download
+
+**[Download BackRight 0.1.0](https://github.com/lylerbaumgarten/backright/releases/latest)** (macOS 13 or newer)
+
+| Your Mac | Installer |
+|---|---|
+| Apple Silicon (M1, M2, M3, M4…) | `BackRight-0.1.0-arm64.dmg` |
+| Intel | `BackRight-0.1.0-x64.dmg` |
+
+Not sure which? Apple menu → **About This Mac**: *Chip: Apple M…* = Apple Silicon, *Processor: Intel…* = Intel.
+
+BackRight isn't notarized (that needs a paid Apple developer account), so macOS blocks the first launch: open the app, click **Done**, then **System Settings → Privacy & Security → Open Anyway**. Step-by-step instructions are inside the disk image and in the [release notes](https://github.com/lylerbaumgarten/backright/releases/tag/v0.1.0). Prefer not to trust a download? Everything is open source — build it yourself below.
+
+> **Not a medical device.** BackRight is an ergonomics reminder, not medical advice. If you have pain, see a professional.
 
 ## Screenshots
 
