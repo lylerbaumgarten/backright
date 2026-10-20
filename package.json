@@ -12,7 +12,8 @@
     "fresh": "node scripts/fresh.mjs",
     "app": "node scripts/dev-app.mjs --install",
     "icon": "node scripts/make-icon.mjs",
-    "docs:screenshots": "node scripts/docs-screenshots.mjs"
+    "docs:screenshots": "node scripts/docs-screenshots.mjs",
+    "release:mac": "node scripts/release-mac.mjs"
   },
   "keywords": [],
   "author": "Lyle Baumgarten",
