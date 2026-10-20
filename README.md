@@ -11,6 +11,8 @@ npm install     # also copies the MediaPipe runtime and downloads the pose model
 npm start
 ```
 
+On macOS, use `npm run dev:app` instead of `npm start`: it runs a renamed copy (`build/Posture.app`) so macOS gives Posture its own camera permission prompt. (Running via `npm start` makes macOS blame whatever launched it — a terminal, editor or Claude — and the camera is often silently denied.)
+
 Grant camera access when asked. A tray/menu-bar icon keeps it running in the background; the window hides when closed.
 
 ## How to use it

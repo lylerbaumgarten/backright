@@ -3,3 +3,4 @@ vendor/
 dist/
 out/
 .DS_Store
+build/
