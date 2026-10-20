@@ -28,6 +28,12 @@ const pkg = JSON.parse(readFileSync(path.join(root, "package.json"), "utf8"));
 const pb = (...cmd) => spawnSync("/usr/libexec/PlistBuddy", ["-c", cmd.join(" "), plist], { stdio: "ignore" });
 const setKey = (key, type, value) => { if (pb(`Set :${key} ${value}`).status !== 0) pb(`Add :${key} ${type} ${value}`); };
 
+// Electron's binary is downloaded lazily (npm doesn't always run its installer) — make sure it's there before copying it.
+if (!existsSync(path.join(root, "node_modules/electron/dist/Electron.app"))) {
+  console.log("Downloading the Electron binary (one time)…");
+  execFileSync("node", [path.join(root, "node_modules/electron/install.js")], { stdio: "inherit" });
+}
+
 // icon assets are generated, not hand-made
 if (!existsSync(path.join(root, "assets/icon.icns"))) execFileSync("node", [path.join(root, "scripts/make-icon.mjs")], { stdio: "inherit" });
 
