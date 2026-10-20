@@ -1,19 +1,23 @@
 import { loadModel, createCamera, detect, drawSkeleton } from "./detector.js";
 import { measure, average, createMonitor, setupChecks } from "./posture.js";
 import { GUIDE, CHECK_LABELS } from "./guide.js";
+import { art } from "./guide-art.js";
+import { createWizard } from "./onboarding.js";
 
 const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const video = $("video"), canvas = $("overlay"), stage = $("stage");
 const camera = createCamera(video);
 const monitor = createMonitor();
 
 let settings, idle = false, previewOn = false, modelReady = false;
-let calib = null;        // { phase: "countdown"|"sample", until, samples: [] }
+let calib = null, calibCb = null;   // calib: { phase: "countdown"|"sample", until, samples: [] }
 let setupLive = false;
 let timer = null, lastTick = 0;
-let tab = "monitor";
+let tab = "monitor";                // monitor | setup | privacy | onboard (the first-run walkthrough)
 let cameraBlocked = false;
-let notice = "";          // transient message shown under the status (survives re-renders)
+let notice = "";                    // transient message shown under the status (survives re-renders)
+let hintTimer = null, renderedSetupMode = null;
 
 const COUNTDOWN_MS = 4000, SAMPLE_MS = 3000, MIN_SAMPLES = 4;
 const modeName = m => (m === "sit" ? "sitting" : "standing");
@@ -50,7 +54,8 @@ async function syncCamera() {
     camera.releaseAll();
     calib = null; setupLive = false;
     if (settings.monitoring) { settings.monitoring = false; window.posture.setSettings({ monitoring: false }); }
-    render(); return;
+    render(); finishCalib(false); if (tab === "onboard") wizard.refresh();
+    return;
   }
   const showStage = any && (previewOn || !!calib || setupLive);
   stage.hidden = !showStage;
@@ -88,8 +93,12 @@ function handle(lm) {
 }
 
 // ---------- calibration ----------
-function startCalibration() {
-  tab = "monitor"; notice = ""; calib = { phase: "countdown", until: performance.now() + COUNTDOWN_MS, samples: [] };
+function finishCalib(ok) { const cb = calibCb; calibCb = null; cb?.(ok); }
+
+function startCalibration(cb = null) {
+  if (tab !== "onboard") tab = "monitor";
+  notice = ""; calibCb = cb;
+  calib = { phase: "countdown", until: performance.now() + COUNTDOWN_MS, samples: [] };
   render(); syncCamera();
 }
 
@@ -109,49 +118,76 @@ function handleCalibration(lm, now) {
     cd.hidden = true;
     if (calib.samples.length >= MIN_SAMPLES) {
       const b = average(calib.samples); calib = null; monitor.reset();
-      save({ baselines: { ...settings.baselines, [settings.mode]: b } });
+      save({ baselines: { ...settings.baselines, [settings.mode]: b } }).then(() => finishCalib(true));
       setStatus(`Calibrated for ${modeName(settings.mode)}`, "ok");
     } else {
       calib = null;
       notice = "Couldn't see you well enough to calibrate — check lighting and that your head and shoulders are in frame, then try again.";
-      render(); syncCamera();
+      render(); syncCamera(); finishCalib(false);
     }
   }
 }
 
-// ---------- desk setup guide ----------
+// ---------- desk setup tab ----------
 function renderSetup() {
-  const g = GUIDE[settings.mode];
-  $("setupTitle").textContent = `Desk setup — ${modeName(settings.mode)}`;
+  const mode = settings.mode, g = GUIDE[mode];
+  $("setupTitle").textContent = `Desk setup — ${modeName(mode)}`;
   $("setupIntro").textContent = g.intro;
-  $("steps").innerHTML = g.steps.map(s => `<li><b>${s.title}</b>${s.body}</li>`).join("");
+  if (renderedSetupMode !== mode) {   // illustrations are static per mode — don't rebuild on every settings change
+    renderedSetupMode = mode;
+    $("steps").innerHTML = g.steps.map((s, i) => `
+      <div class="gcard">
+        <div class="art">${art(mode, s.art)}</div>
+        <h3>${i + 1}. ${esc(s.title)}</h3>
+        <p>${esc(s.body)}</p>
+        <ul class="points">${s.points.map(p => `<li>${esc(p)}</li>`).join("")}</ul>
+      </div>`).join("");
+  }
   $("liveCheck").hidden = !setupLive;
   $("startLive").textContent = setupLive ? "Stop live check" : "Run live check";
-  $("afterSetup").hidden = !settings.setupDone[settings.mode];
+  $("afterSetup").hidden = !settings.setupDone[mode];
 }
 
 function renderChecks(result) {
   const keys = [...new Set(GUIDE[settings.mode].steps.flatMap(s => s.checks || []))];
   const icon = { ok: "✓", adjust: "!", unknown: "–" };
-  $("checkList").innerHTML = keys.map(k => {
+  const html = keys.map(k => {
     const c = result?.[k] ?? { status: "unknown", note: "Looking for you…" };
     return `<li class="${c.status}"><span class="ic">${icon[c.status]}</span><span><b>${CHECK_LABELS[k]}:</b> ${c.note}</span></li>`;
   }).join("");
+  document.querySelectorAll(".live-checklist").forEach(el => { el.innerHTML = html; });
 }
+
+// ---------- pointer to the Desk setup tab ----------
+function showTabHint(text, { persist = false } = {}) {
+  $("tabHintText").textContent = text;
+  $("tabHint").hidden = false; $("tabSetup").classList.add("pulse");
+  clearTimeout(hintTimer);
+  if (!persist) hintTimer = setTimeout(hideTabHint, 12000);
+}
+function hideTabHint() { clearTimeout(hintTimer); $("tabHint").hidden = true; $("tabSetup").classList.remove("pulse"); }
 
 // ---------- rendering ----------
 function render() {
+  const inWizard = tab === "onboard";
   document.querySelectorAll("#modeSeg button").forEach(b => b.classList.toggle("on", b.dataset.mode === settings.mode));
-  document.querySelectorAll("#tabs button").forEach(b => b.classList.toggle("on", b.dataset.tab === tab));
-  for (const t of ["monitor", "setup", "privacy"]) $("tab-" + t).hidden = t !== tab;
+  document.querySelectorAll("#tabs button").forEach(b => b.classList.toggle("on", !inWizard && b.dataset.tab === tab));
+  for (const t of ["onboard", "monitor", "setup", "privacy"]) $("tab-" + t).hidden = t !== tab;
+  $("tabs").classList.toggle("locked", inWizard);   // can't wander off mid-walkthrough; "Close" is the exit
+  $("modeSeg").hidden = inWizard;
+
+  const mode = settings.mode;
+  const needsSetup = settings.onboarded && !settings.setupDone[mode] && !settings.setupBannerDismissed[mode];
+  $("setupBanner").hidden = !needsSetup;
+  $("bannerText").textContent = `Desk setup for ${modeName(mode)} hasn't been done yet. A minute of setup makes calibration more accurate.`;
 
   $("toggleMon").textContent = settings.monitoring ? "Pause monitoring" : "Start monitoring";
   $("togglePreview").textContent = previewOn ? "Hide preview" : "Show preview";
   $("calibrate").disabled = !!calib;
   $("camBlocked").hidden = !cameraBlocked;
   $("calHint").textContent = notice || (baseline()
-    ? `Calibrated for ${modeName(settings.mode)}. Recalibrate any time you change your setup.`
-    : `Not calibrated for ${modeName(settings.mode)} yet. ${settings.setupDone[settings.mode] ? "" : "Tip: do the Desk setup first. "}Then press Calibrate.`);
+    ? `Calibrated for ${modeName(mode)}. Recalibrate any time you change your setup.`
+    : `Not calibrated for ${modeName(mode)} yet. ${settings.setupDone[mode] ? "" : "Tip: do the Desk setup first. "}Then press Calibrate.`);
 
   $("sens").value = settings.sensitivity; $("sensVal").textContent = (+settings.sensitivity).toFixed(2) + "×";
   $("delay").value = settings.delaySec; $("delayVal").textContent = settings.delaySec + "s";
@@ -159,10 +195,35 @@ function render() {
   $("glowOn").checked = settings.glow; $("pillOn").checked = settings.pill;
 
   if (!calib && !wantMonitoring()) {
-    setStatus(settings.monitoring && !baseline() ? `Calibrate for ${modeName(settings.mode)} to begin` : idle ? "Paused — screen locked" : "Not monitoring");
+    setStatus(settings.monitoring && !baseline() ? `Calibrate for ${modeName(mode)} to begin` : idle ? "Paused — screen locked" : "Not monitoring");
   }
   renderSetup();
 }
+
+// ---------- walkthrough ----------
+const wizard = createWizard($("tab-onboard"), {
+  settings: () => settings,
+  notice: () => notice,
+  cameraBlocked: () => cameraBlocked,
+  live: () => setupLive,
+  setLive: v => { if (setupLive !== v) { setupLive = v; render(); syncCamera(); } },
+  toggleLive: () => { setupLive = !setupLive; if (setupLive) renderChecks(null); syncCamera(); },
+  setMode: async m => { if (m !== settings.mode) { monitor.reset(); window.posture.setWarning(false); await save({ mode: m }); } },
+  markSetupDone: () => save({ setupDone: { ...settings.setupDone, [settings.mode]: true } }),
+  calibrate: cb => startCalibration(cb),
+  hintDeskSetup: on => on ? showTabHint("Skipped for now — the desk setup guide lives here", { persist: true }) : hideTabHint(),
+  openCameraSettings: () => window.posture.openCameraSettings(),
+  relaunch: () => window.posture.relaunch(),
+  finish: async ({ start, skippedSetup }) => {
+    tab = "monitor"; notice = "";
+    await save({ onboarded: true });
+    if (skippedSetup || !settings.setupDone[settings.mode]) showTabHint("You can do the desk setup any time from here", { persist: false });
+    else hideTabHint();
+    if (start) await toggleMonitoring();
+  },
+});
+
+function openWizard(opts) { tab = "onboard"; notice = ""; wizard.start(opts); render(); }
 
 // ---------- events ----------
 document.querySelectorAll("#modeSeg button").forEach(b => b.onclick = () => {
@@ -172,6 +233,7 @@ document.querySelectorAll("#modeSeg button").forEach(b => b.onclick = () => {
 });
 document.querySelectorAll("#tabs button").forEach(b => b.onclick = () => {
   tab = b.dataset.tab;
+  if (tab === "setup") hideTabHint();
   if (tab !== "setup" && setupLive) { setupLive = false; }
   render(); syncCamera();
 });
@@ -183,7 +245,7 @@ async function toggleMonitoring() {
   if (on && !baseline()) startCalibration();
 }
 $("toggleMon").onclick = toggleMonitoring;
-$("calibrate").onclick = startCalibration;
+$("calibrate").onclick = () => startCalibration();
 $("togglePreview").onclick = () => { previewOn = !previewOn; render(); syncCamera(); };
 $("openCamSettings").onclick = () => window.posture.openCameraSettings();
 $("relaunch").onclick = () => window.posture.relaunch();
@@ -193,6 +255,13 @@ $("delay").oninput = e => save({ delaySec: +e.target.value });
 $("every").oninput = e => save({ checkEverySec: +e.target.value });
 $("glowOn").onchange = e => save({ glow: e.target.checked });
 $("pillOn").onchange = e => save({ pill: e.target.checked });
+
+$("bannerGo").onclick = () => openWizard({ fromGuide: true });
+$("bannerLater").onclick = async () => {
+  await save({ setupBannerDismissed: { ...settings.setupBannerDismissed, [settings.mode]: true } });
+  showTabHint("No problem — the desk setup guide is always here", { persist: false });
+};
+$("replayWizard").onclick = () => { setupLive = false; openWizard({ fromGuide: true }); };
 
 $("startLive").onclick = () => { setupLive = !setupLive; if (setupLive) renderChecks(null); render(); syncCamera(); };
 $("setupDone").onclick = async () => {
@@ -207,5 +276,6 @@ window.posture.onIdle(v => { idle = v; monitor.reset(); window.posture.setWarnin
 
 // ---------- boot ----------
 settings = await window.posture.getSettings();
+if (!settings.onboarded) { tab = "onboard"; wizard.start(); }
 render();
 syncCamera(); // resumes monitoring if it was on last time and a baseline exists

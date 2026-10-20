@@ -16,11 +16,17 @@
     </div>
   </header>
 
-  <nav class="tabs" id="tabs">
-    <button data-tab="monitor" class="on">Monitor</button>
-    <button data-tab="setup">Desk setup</button>
-    <button data-tab="privacy">Privacy</button>
-  </nav>
+  <div class="tabwrap">
+    <nav class="tabs" id="tabs">
+      <button data-tab="monitor" class="on">Monitor</button>
+      <button data-tab="setup" id="tabSetup">Desk setup</button>
+      <button data-tab="privacy">Privacy</button>
+    </nav>
+    <div class="tabhint" id="tabHint" hidden>
+      <span class="tip-arrow"></span>
+      <span id="tabHintText">Find the desk setup guide here any time</span>
+    </div>
+  </div>
 
   <!-- shared camera preview: only visible while it's useful -->
   <div class="stage" id="stage" hidden>
@@ -29,7 +35,16 @@
     <div class="countdown" id="countdown" hidden></div>
   </div>
 
+  <section id="tab-onboard" class="wizard" hidden></section>
+
   <section id="tab-monitor">
+    <div class="notice warn banner" id="setupBanner" hidden>
+      <b id="bannerText"></b>
+      <div class="row">
+        <button class="primary" id="bannerGo">Walk me through it</button>
+        <button id="bannerLater">Not now</button>
+      </div>
+    </div>
     <div class="card">
       <div class="status"><span class="dot" id="dot"></span><span id="statusText">Not monitoring</span></div>
       <p class="hint" id="calHint"></p>
@@ -70,13 +85,14 @@
     <div class="card">
       <h2 id="setupTitle">Desk setup</h2>
       <p id="setupIntro" class="hint"></p>
-      <ol id="steps" class="steps"></ol>
+      <div id="steps" class="guide-cards"></div>
       <div class="card inner" id="liveCheck" hidden>
         <h3>Live check</h3>
         <p class="hint">Uses your camera for what it can see. Anything out of frame falls back to the checklist above.</p>
-        <ul id="checkList" class="checks"></ul>
+        <ul id="checkList" class="checks live-checklist"></ul>
       </div>
       <div class="row">
+        <button id="replayWizard">Start the walkthrough</button>
         <button id="startLive">Run live check</button>
         <button class="primary" id="setupDone">Looks good — I'm set up</button>
       </div>

@@ -1,21 +1,50 @@
 // Desk-setup guide content. Written as data so a future version can localise or extend it.
+//   art:    which illustration to draw (see guide-art.js)
+//   body:   one-sentence lead
+//   points: the specifics, shown as a short list
+//   short:  one-liner used on the "your turn" checklist
+//   checks: which live camera checks relate to this step
 export const GUIDE = {
   sit: {
     intro: "Set up your desk first, then calibrate. Calibration only measures how you sit — it can't tell if the desk itself is wrong.",
     steps: [
-      { title: "Chair & feet", body: "Raise or lower your chair until your feet rest flat on the floor (or a footrest) and your thighs are roughly parallel to the floor. Knees about 90°, a fist of space behind your knees and the seat edge.", checks: ["knees"] },
-      { title: "Back & hips", body: "Sit all the way back so your lower back is supported — adjust lumbar support or add a small cushion. Hips slightly above or level with your knees." },
-      { title: "Arms & wrists", body: "Elbows near 90°, close to your sides, forearms level with the desk. Keep wrists straight — not bent up or resting on a hard desk edge. Shoulders relaxed, not shrugged.", checks: ["elbows", "shoulders"] },
-      { title: "Screen height & distance", body: "Top of the screen at or just below eye level, so you look slightly down at the middle of it. About an arm's length away (50–70 cm). Tilt the screen back slightly. If you use a laptop, raise it on a stand with a separate keyboard.", checks: ["distance", "centered"] },
+      { art: "feet", title: "Chair & feet", checks: ["knees"],
+        body: "Start from the ground up: your chair height sets everything else.",
+        short: "Feet flat, knees about 90°",
+        points: ["Feet flat on the floor (or a footrest)", "Thighs roughly level, knees about 90°", "A fist of space between the seat edge and the back of your knees"] },
+      { art: "back", title: "Back & hips",
+        body: "Let the chair do the work of holding your lower back.",
+        short: "Sit back, lower back supported",
+        points: ["Sit all the way back in the chair", "Lower back supported — use the lumbar adjustment or a small cushion", "Hips level with, or slightly above, your knees"] },
+      { art: "arms", title: "Arms & wrists", checks: ["elbows", "shoulders"],
+        body: "Adjust the desk or armrests so your arms hang naturally.",
+        short: "Elbows about 90°, wrists straight",
+        points: ["Elbows near 90°, close to your sides", "Forearms level with the desk", "Wrists straight and shoulders relaxed, not shrugged"] },
+      { art: "screen", title: "Screen height & distance", checks: ["distance", "centered"],
+        body: "Put the screen where you don't have to crane or hunch to see it.",
+        short: "Screen top at eye level, arm's length",
+        points: ["Top of the screen at or just below eye level", "About an arm's length away (50–70 cm)", "On a laptop, raise it on a stand and use a separate keyboard"] },
     ],
   },
   stand: {
     intro: "Standing needs its own setup — a desk that's right for sitting is almost never right for standing. Raise the desk first, then calibrate.",
     steps: [
-      { title: "Feet & weight", body: "Feet about hip-width apart, weight even on both feet, knees soft (not locked). An anti-fatigue mat helps. Shift your stance every so often." },
-      { title: "Arms & wrists", body: "Raise the desk until your elbows are about 90° with forearms level. Keep wrists straight and shoulders relaxed.", checks: ["elbows", "shoulders"] },
-      { title: "Screen height & distance", body: "Top of the screen at or just below eye level, about an arm's length away. Standing tends to push the screen too low — check it again after raising the desk.", checks: ["distance", "centered"] },
-      { title: "Head & spine", body: "Ears over shoulders, shoulders over hips. Imagine a string lifting the top of your head — no chin poke, no leaning on one hip." },
+      { art: "feet", title: "Feet & weight",
+        body: "A stable base makes standing all day far less tiring.",
+        short: "Feet hip-width, weight even",
+        points: ["Feet about hip-width apart", "Weight even on both feet, knees soft — don't lock them", "An anti-fatigue mat helps; shift your stance every so often"] },
+      { art: "arms", title: "Arms & wrists", checks: ["elbows", "shoulders"],
+        body: "Set the desk height from your elbows, not from habit.",
+        short: "Desk at elbow height, wrists straight",
+        points: ["Raise the desk until your elbows are about 90°", "Forearms level, wrists straight", "Shoulders relaxed, not shrugged"] },
+      { art: "screen", title: "Screen height & distance", checks: ["distance", "centered"],
+        body: "Standing tends to leave the screen too low — recheck after raising the desk.",
+        short: "Screen top at eye level, arm's length",
+        points: ["Top of the screen at or just below eye level", "About an arm's length away (50–70 cm)", "Look slightly down at the middle of the screen, not up or hunched"] },
+      { art: "spine", title: "Head & spine",
+        body: "Stack your head, shoulders and hips in one line.",
+        short: "Ears over shoulders over hips",
+        points: ["Ears over shoulders, shoulders over hips", "Imagine a string lifting the top of your head", "No chin poke, no leaning on one hip"] },
     ],
   },
 };

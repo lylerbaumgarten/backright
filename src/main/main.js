@@ -25,6 +25,8 @@ const DEFAULTS = {
   mode: "sit",                 // "sit" | "stand"
   baselines: { sit: null, stand: null },
   setupDone: { sit: false, stand: false },
+  onboarded: false,            // first-run walkthrough finished or closed
+  setupBannerDismissed: { sit: false, stand: false },
   sensitivity: 1,
   delaySec: 4,
   checkEverySec: 0.5,          // sampling interval — posture moves slowly, so no need for full video rate

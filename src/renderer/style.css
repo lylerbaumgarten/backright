@@ -38,3 +38,60 @@ input[type=range] { width:100%; }
 .notice { margin-top:14px; padding:12px; border-radius:10px; background:var(--bg); border:1px solid var(--ok); }
 .prose li { margin-bottom:8px; } code { background:var(--bg); padding:1px 5px; border-radius:4px; }
 [hidden] { display:none !important; }
+
+/* ---- guide illustrations ---- */
+.art { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:8px; }
+.art svg { display:block; width:100%; height:auto; }
+.a-line { fill:none; stroke:var(--fg); stroke-width:3.2; stroke-linecap:round; stroke-linejoin:round; }
+.a-line.a-fill, .a-line .a-fill { fill:var(--card); }
+.a-furn { stroke:var(--muted); stroke-width:2.4; fill:none; stroke-linecap:round; }
+.a-furn.a-fill { fill:var(--bg); }
+.a-furn.a-thick { stroke-width:6; }
+.a-furn.a-mat { fill:var(--line); }
+.a-hl { stroke:var(--ok); stroke-width:3; fill:none; stroke-linecap:round; }
+.a-hl.a-thin { stroke-width:2; }
+.a-hl.a-thick { stroke-width:4; }
+.a-hl.a-arcline { stroke-width:2.6; }
+.a-hlfill { fill:var(--ok); opacity:.22; stroke:none; }
+.a-dash { stroke-dasharray:5 4; }
+.a-gaze { stroke-width:1.6; stroke:var(--muted); }
+.a-dot { fill:var(--ok); }
+.a-eye { fill:var(--fg); }
+.a-text { fill:var(--fg); font:500 12px system-ui,-apple-system,"Segoe UI",sans-serif; }
+.a-text.a-small { font-size:11px; }
+.a-text.a-hlt { fill:var(--ok); font-weight:700; }
+
+/* ---- walkthrough ---- */
+.tabwrap { position:relative; }
+.tabs.locked { pointer-events:none; opacity:.55; }
+.tabs button.pulse { color:var(--fg); animation:pulse 1.4s ease-in-out infinite; }
+@keyframes pulse { 0%,100% { box-shadow:0 0 0 0 transparent, inset 0 -2px 0 var(--warn); } 50% { box-shadow:0 0 0 4px color-mix(in srgb, var(--warn) 35%, transparent), inset 0 -2px 0 var(--warn); } }
+.tabs.locked button.pulse { opacity:1; }
+.tabhint { position:absolute; top:3px; left:324px; z-index:5; white-space:nowrap; background:var(--warn); color:#1a1200; font-size:13px; font-weight:600; padding:7px 12px; border-radius:10px; box-shadow:0 4px 16px #0003; }
+.tip-arrow { position:absolute; top:50%; left:-5px; margin-top:-5px; width:10px; height:10px; background:var(--warn); transform:rotate(45deg); }
+.wizard { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:20px; margin-bottom:16px; }
+.wizard h2 { font-size:20px; margin:4px 0 8px; }
+.wizard .lead { font-size:15px; margin:10px 0; }
+.eyebrow { color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:.06em; margin:8px 0 0; }
+.wiz-top { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:8px; }
+.phases { display:flex; gap:14px; list-style:none; padding:0; margin:0; font-size:13px; color:var(--muted); }
+.phases li { display:flex; align-items:center; gap:6px; }
+.phases li span { width:20px; height:20px; border-radius:50%; display:grid; place-items:center; border:1px solid var(--line); font-size:11px; }
+.phases li.on { color:var(--fg); font-weight:600; } .phases li.on span { background:var(--accent); color:var(--bg); border-color:var(--accent); }
+.phases li.past span { background:var(--ok); color:#fff; border-color:var(--ok); }
+button.ghost { border-color:transparent; background:none; color:var(--muted); }
+button.ghost:hover { color:var(--fg); }
+.points { margin:8px 0 4px; padding-left:20px; } .points li { margin-bottom:5px; }
+.todo { list-style:none; padding:0; margin:12px 0; } .todo li { padding:8px 0; border-bottom:1px solid var(--line); }
+.todo label { display:flex; gap:10px; align-items:baseline; margin:0; color:var(--fg); font-size:15px; cursor:pointer; }
+.todo label span { color:var(--muted); font-size:13px; }
+.wiz-nav { margin-top:18px; } .spacer { flex:1; }
+.choice { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:8px 0; }
+.choice button { text-align:left; padding:14px; border-radius:12px; } .choice button b { display:block; font-size:16px; } .choice button small { color:var(--muted); }
+.choice button.on { border:2px solid var(--accent); padding:13px; }
+.notice.warn { margin-top:0; }
+.banner { margin-bottom:16px; }
+.guide-cards { display:grid; gap:18px; margin:12px 0; }
+.gcard h3 { font-size:15px; margin:10px 0 4px; } .gcard p { margin:4px 0; font-size:14px; }
+.gcard .points { font-size:14px; }
+.wizard .art svg { max-height:300px; }
