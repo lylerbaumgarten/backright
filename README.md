@@ -4,6 +4,10 @@ A small desktop app that watches your posture through the webcam and gives a fai
 
 > Status: early prototype (v0.1). Electron, macOS-first; Windows should work but is untested.
 
+## Requirements
+
+macOS (Windows should largely work but is untested) · Node.js 22 or newer · a webcam. First run downloads Electron (~100 MB) and the pose model (~6 MB); after that the app needs no internet.
+
 ## Run it
 
 ```bash
@@ -65,3 +69,7 @@ test/           Unit tests for the posture maths and privacy guardrails
 - The screen glow is drawn as four thin edge strips per display (not one full-screen window), shown only while a nudge is up, and flagged as excluded from screenshots/recordings. A full-screen window gets picked by macOS window-capture (⇧⌘4 → Space) as "the window under the cursor" and then can't be captured; strips leave the middle of the screen free. The reminder pill has **Pause** (stops monitoring and turns the camera off) and **Settings** (brings the app to the front, even if it was closed to the menu bar). Tray menu → **Snooze nudges** pauses the glow for 5 min / 30 min / 1 h (handy for screen shares).
 - Overlay over true full-screen apps on macOS/Windows needs real-world testing.
 - Not yet packaged/signed for distribution.
+
+## License
+
+MIT — see [LICENSE](LICENSE). Posture bundles Electron (MIT), MediaPipe Tasks Vision (Apache-2.0) and Google's BlazePose GHUM pose model (Apache-2.0); see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
