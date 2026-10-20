@@ -141,6 +141,9 @@ function syncOverlays() {
     existing?.wins.forEach(w => !w.isDestroyed() && w.destroy());
     overlays.set(d.id, { sig, wins: [...stripsFor(d.bounds).map(overlayStrip), overlayPill(d.bounds)] });
   }
+  // setVisibleOnAllWorkspaces(…, { visibleOnFullScreen: true }) quietly turns a macOS app into a menu-bar-only
+  // "accessory" and removes its Dock icon. We want the Dock icon (it's how you reopen a closed window), so restore it.
+  if (process.platform === "darwin") app.dock?.show();
 }
 
 function pushOverlayState(win) {
@@ -202,15 +205,8 @@ function pauseMonitoring() {
 
 // ---- tray ----
 function trayIcon() {
-  // 16px template glyph drawn in code so there are no image assets to ship yet.
-  const size = 16, buf = Buffer.alloc(size * size * 4);
-  for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
-    const head = (x - 8) ** 2 + (y - 4) ** 2 <= 9;                 // head
-    const body = y >= 9 && Math.abs(x - 8) <= 3 + (y - 9) * 0.4;     // shoulders
-    const i = (y * size + x) * 4;
-    if (head || body) { buf[i] = buf[i + 1] = buf[i + 2] = 0; buf[i + 3] = 255; }
-  }
-  const img = nativeImage.createFromBitmap(buf, { width: size, height: size });
+  // black-and-transparent "template" glyph (assets/trayTemplate.png + @2x) — macOS tints it for light/dark menu bars
+  const img = nativeImage.createFromPath(path.join(ROOT, "assets/trayTemplate.png"));
   img.setTemplateImage(true);
   return img;
 }
@@ -263,7 +259,8 @@ app.whenReady().then(() => {
   loadSettings();
   registerAppProtocol();
   lockDownNetwork(session.defaultSession);
-  if (process.platform === "darwin") app.dock?.hide();   // menu-bar style app
+  // Normal Dock presence (so there is always an icon to click to reopen the window); the tray icon complements it.
+  if (process.platform === "darwin") app.dock?.setIcon(nativeImage.createFromPath(path.join(ROOT, "assets/icon.png")));
 
   tray = new Tray(trayIcon());
   tray.setToolTip("Posture");

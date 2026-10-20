@@ -11,7 +11,9 @@ npm install     # also copies the MediaPipe runtime and downloads the pose model
 npm start
 ```
 
-On macOS, use `npm run dev:app` instead of `npm start`: it runs a renamed copy (`build/Posture.app`) so macOS gives Posture its own camera permission prompt. (Running via `npm start` makes macOS blame whatever launched it — a terminal, editor or Claude — and the camera is often silently denied.)
+**On macOS, install it as a real app:** `npm run app` builds a standalone `Posture.app` (own name, icon and camera permission, code bundled inside), installs it to `~/Applications`, and launches it. After that it lives in the Dock, Launchpad and Spotlight — closing the window leaves it running, and clicking the Dock icon brings the window back. Right-click its Dock icon → Options → Keep in Dock to pin it. `npm run dev:app` does the same without installing (runs `build/Posture.app`), `-- --debug` opens a DevTools port, `-- --rebuild` recreates the bundle (macOS will ask for camera access again). `npm start` runs the plain Electron binary, which macOS blames for camera access — avoid it for camera testing.
+
+Re-run `npm run app` after code changes to refresh the installed copy.
 
 **Start over (for testing):** `npm run fresh` quits the app, deletes saved settings and relaunches into the first-run walkthrough. Add `-- --camera` to also reset the macOS camera permission, `-- --all` to wipe the whole data folder.
 

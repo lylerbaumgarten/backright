@@ -15,7 +15,7 @@ const BUNDLE_ID = "com.lylebaumgarten.posture";
 
 // 1. quit every running Posture (dev app + overlay helpers)
 if (!args.has("--no-quit")) {
-  spawnSync("pkill", ["-f", "build/Posture.app/Contents/MacOS"], { stdio: "ignore" });
+  spawnSync("pkill", ["-f", "Posture.app/Contents/MacOS"], { stdio: "ignore" });
   await new Promise(r => setTimeout(r, 1200));
   console.log("• quit Posture");
 }
