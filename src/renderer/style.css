@@ -34,6 +34,7 @@ input[type=range] { width:100%; }
 .steps { padding-left:20px; margin:8px 0; } .steps li { margin-bottom:10px; } .steps b { display:block; }
 .checks { list-style:none; padding:0; margin:8px 0 0; } .checks li { display:flex; gap:8px; align-items:baseline; padding:3px 0; }
 .checks .ic { width:1.2em; text-align:center; } .checks .ok .ic { color:var(--ok); } .checks .adjust .ic { color:var(--warn); } .checks .unknown { color:var(--muted); }
+.notice.warn { border-color:var(--warn); margin-bottom:8px; }
 .notice { margin-top:14px; padding:12px; border-radius:10px; background:var(--bg); border:1px solid var(--ok); }
 .prose li { margin-bottom:8px; } code { background:var(--bg); padding:1px 5px; border-radius:4px; }
 [hidden] { display:none !important; }

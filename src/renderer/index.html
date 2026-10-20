@@ -33,6 +33,13 @@
     <div class="card">
       <div class="status"><span class="dot" id="dot"></span><span id="statusText">Not monitoring</span></div>
       <p class="hint" id="calHint"></p>
+      <div class="notice warn" id="camBlocked" hidden>
+        <b>Camera access is off for this app.</b> macOS only asks once, so it can't ask again — turn it on in Settings, then restart the app.
+        <div class="row">
+          <button class="primary" id="openCamSettings">Open Camera settings</button>
+          <button id="relaunch">Restart app</button>
+        </div>
+      </div>
       <div class="row">
         <button class="primary" id="toggleMon">Start monitoring</button>
         <button id="calibrate">Calibrate</button>

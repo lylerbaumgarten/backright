@@ -12,6 +12,7 @@ let calib = null;        // { phase: "countdown"|"sample", until, samples: [] }
 let setupLive = false;
 let timer = null, lastTick = 0;
 let tab = "monitor";
+let cameraBlocked = false;
 let notice = "";          // transient message shown under the status (survives re-renders)
 
 const COUNTDOWN_MS = 4000, SAMPLE_MS = 3000, MIN_SAMPLES = 4;
@@ -37,7 +38,8 @@ async function syncCamera() {
     if (any) {
       setStatus("Checking camera permission…");
       const access = await window.posture.requestCamera();
-      if (access === "denied" || access === "restricted") throw new Error("Camera access is blocked. Allow it for this app in System Settings → Privacy & Security → Camera, then try again.");
+      cameraBlocked = access === "denied" || access === "restricted";
+      if (cameraBlocked) throw new Error("Camera access is blocked. Allow it for this app in System Settings → Privacy & Security → Camera, then try again.");
       await ensureModel();
       setStatus("Starting camera…");
     }
@@ -146,6 +148,7 @@ function render() {
   $("toggleMon").textContent = settings.monitoring ? "Pause monitoring" : "Start monitoring";
   $("togglePreview").textContent = previewOn ? "Hide preview" : "Show preview";
   $("calibrate").disabled = !!calib;
+  $("camBlocked").hidden = !cameraBlocked;
   $("calHint").textContent = notice || (baseline()
     ? `Calibrated for ${modeName(settings.mode)}. Recalibrate any time you change your setup.`
     : `Not calibrated for ${modeName(settings.mode)} yet. ${settings.setupDone[settings.mode] ? "" : "Tip: do the Desk setup first. "}Then press Calibrate.`);
@@ -182,6 +185,8 @@ async function toggleMonitoring() {
 $("toggleMon").onclick = toggleMonitoring;
 $("calibrate").onclick = startCalibration;
 $("togglePreview").onclick = () => { previewOn = !previewOn; render(); syncCamera(); };
+$("openCamSettings").onclick = () => window.posture.openCameraSettings();
+$("relaunch").onclick = () => window.posture.relaunch();
 $("testNudge").onclick = () => window.posture.previewOverlay();
 $("sens").oninput = e => save({ sensitivity: +e.target.value });
 $("delay").oninput = e => save({ delaySec: +e.target.value });

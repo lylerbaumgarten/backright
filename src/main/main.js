@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Tray, Menu, screen, ipcMain, session, protocol, powerMonitor, nativeImage, systemPreferences } = require("electron");
+const { app, BrowserWindow, Tray, Menu, screen, ipcMain, session, protocol, powerMonitor, nativeImage, systemPreferences, shell } = require("electron");
 const path = require("node:path");
 const fs = require("node:fs");
 
@@ -170,6 +170,11 @@ ipcMain.handle("camera:request", async () => {
   if (status === "not-determined") return (await systemPreferences.askForMediaAccess("camera")) ? "granted" : "denied";
   return status;
 });
+ipcMain.on("camera:open-settings", () => {
+  // Fixed OS settings deep links only — nothing from the renderer is interpolated.
+  shell.openExternal(process.platform === "darwin" ? "x-apple.systempreferences:com.apple.preference.security?Privacy_Camera" : "ms-settings:privacy-webcam");
+});
+ipcMain.on("app:relaunch", () => { app.isQuitting = true; app.relaunch(); app.quit(); });
 ipcMain.on("posture:warning", (_e, on) => setWarning(!!on));
 ipcMain.on("overlay:preview", () => { setWarning(true); setTimeout(() => setWarning(false), 3500); });
 

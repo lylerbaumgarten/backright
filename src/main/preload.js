@@ -8,6 +8,8 @@ contextBridge.exposeInMainWorld("posture", {
   getSettings: () => ipcRenderer.invoke("settings:get"),
   setSettings: patch => ipcRenderer.invoke("settings:set", patch),
   requestCamera: () => ipcRenderer.invoke("camera:request"),
+  openCameraSettings: () => ipcRenderer.send("camera:open-settings"),
+  relaunch: () => ipcRenderer.send("app:relaunch"),
   setWarning: onOff => ipcRenderer.send("posture:warning", !!onOff),
   previewOverlay: () => ipcRenderer.send("overlay:preview"),
   onSettings: fn => on("settings:changed", fn),
