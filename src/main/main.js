@@ -229,8 +229,9 @@ function currentTray() {
 function updateTray() {
   if (!tray) return;
   const { state, tip } = currentTray();
-  if (process.env.POSTURE_DEBUG) console.log(`[tray] ${state} — ${tip}`);
-  tray.setImage(trayImage(ICON[state]));
+  const __img = trayImage(ICON[state]);
+  if (process.env.POSTURE_DEBUG) console.log(`[tray] ${state} — ${tip} | image ${ICON[state]} empty=${__img.isEmpty()} size=${JSON.stringify(__img.getSize())} template=${__img.isTemplateImage()}`);
+  tray.setImage(__img);
   tray.setToolTip(tip);
 }
 
@@ -259,6 +260,7 @@ function sendToPanel(ch, payload) { if (panel && !panel.isDestroyed()) panel.web
 // ---- IPC ----
 ipcMain.handle("settings:get", () => settings);
 ipcMain.handle("settings:set", (_e, patch) => {
+  if (process.env.POSTURE_DEBUG) console.log(`[settings:set] ${Date.now() % 100000} ${JSON.stringify(patch).slice(0, 120)}`);
   settings = { ...settings, ...patch };
   saveSettings(); rebuildTray(); pushAllOverlays();
   return settings;

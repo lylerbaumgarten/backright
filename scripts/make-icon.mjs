@@ -64,8 +64,8 @@ function appIcon(x, y, px) {
 }
 
 // ---------- menu-bar glyphs ----------
-// Black + alpha "template" images (macOS tints them for light/dark menu bars), except the amber warning one.
-//   trayTemplate        solid          → monitoring, all good
+// Outline/dot ones are black + alpha "template" images (macOS tints them for light/dark menu bars); the green and amber ones are coloured.
+//   trayActive          solid green    → monitoring, all good (coloured, so it's unmistakable vs. the grey outline)
 //   trayOffTemplate     outline        → paused / needs calibration / screen locked
 //   traySnoozeTemplate  outline + dot  → nudges snoozed
 //   trayWarn            solid amber    → you're being nudged right now (not a template, so it keeps its colour)
@@ -75,7 +75,7 @@ const outlineGlyph = (x, y, px) => cov(Math.abs(figureD(x, y)) - 46 * Math.max(1
 const dotGlyph = (x, y, px) => cov(circle(x, y, 820, 820, 130), px);
 const tmpl = f => (x, y, px) => [0, 0, 0, Math.min(1, f(x, y, px))];
 const GLYPHS = {
-  trayTemplate: tmpl(solidGlyph),
+  trayActive: (x, y, px) => [46, 178, 104, solidGlyph(x, y, px)],
   trayOffTemplate: tmpl(outlineGlyph),
   traySnoozeTemplate: tmpl((x, y, px) => Math.max(outlineGlyph(x, y, px), dotGlyph(x, y, px))),
   trayWarn: (x, y, px) => [240, 150, 30, solidGlyph(x, y, px)],

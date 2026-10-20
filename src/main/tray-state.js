@@ -1,6 +1,6 @@
 // What the menu-bar icon should say about the app. Pure (no Electron) so it's unit-tested.
 //   warn    amber icon       you're being nudged right now
-//   active  solid icon       monitoring, posture fine
+//   active  green icon       monitoring, posture fine
 //   snooze  outline + dot    monitoring, but nudges are snoozed
 //   off     outline icon     paused, not calibrated yet, or screen locked
 
@@ -13,7 +13,7 @@ function trayState({ warning, monitoring, calibrated, idle, snoozed }) {
   return snoozed ? "snooze" : "active";
 }
 
-const ICON = { warn: "trayWarn", active: "trayTemplate", snooze: "traySnoozeTemplate", off: "trayOffTemplate" };
+const ICON = { warn: "trayWarn", active: "trayActive", snooze: "traySnoozeTemplate", off: "trayOffTemplate" };
 
 function trayText(state, { monitoring, calibrated, idle, snoozeUntilLabel = "" }) {
   switch (state) {

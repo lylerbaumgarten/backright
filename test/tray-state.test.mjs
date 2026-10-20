@@ -17,11 +17,11 @@ test("monitoring on but not calibrated → off (can't actually monitor)", () => 
 test("screen locked → off", () => assert.equal(trayState({ ...base, idle: true }), "off"));
 test("snoozed while monitoring → snooze", () => assert.equal(trayState({ ...base, snoozed: true }), "snooze"));
 
-test("every state has an icon file, and only the warning icon is a non-template (keeps its colour)", () => {
+test("every state has an icon file; only the green and amber icons are non-template (they keep their colour)", () => {
   for (const state of ["warn", "active", "snooze", "off"]) {
     for (const suffix of ["", "@2x"]) assert.ok(fs.existsSync(new URL(`../assets/${ICON[state]}${suffix}.png`, import.meta.url)), `${ICON[state]}${suffix}.png`);
   }
-  assert.deepEqual(Object.values(ICON).filter(n => !n.endsWith("Template")), ["trayWarn"]);
+  assert.deepEqual(Object.values(ICON).filter(n => !n.endsWith("Template")).sort(), ["trayActive", "trayWarn"]);
 });
 
 test("labels say why it's off", () => {
