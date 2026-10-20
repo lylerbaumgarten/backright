@@ -3,6 +3,7 @@
 //   active  green icon       monitoring, posture fine
 //   snooze  outline + dot    monitoring, but nudges are snoozed
 //   off     outline icon     paused, not calibrated yet, or screen locked
+// The Dock icon follows the same state (see DOCK).
 
 // Keep in sync with BASELINE_VERSION in src/renderer/posture.js (a test enforces it).
 const BASELINE_VERSION = 2;
@@ -13,6 +14,8 @@ function trayState({ warning, monitoring, calibrated, idle, snoozed }) {
   return snoozed ? "snooze" : "active";
 }
 
+// Dock icon variants (the app icon with a status dot); the Dock shows these while the app is running.
+const DOCK = { warn: "dock-warn", active: "dock-active", snooze: "dock-snooze", off: "dock-off" };
 const ICON = { warn: "trayWarn", active: "trayActive", snooze: "traySnoozeTemplate", off: "trayOffTemplate" };
 
 function trayText(state, { monitoring, calibrated, idle, snoozeUntilLabel = "" }) {
@@ -27,4 +30,4 @@ function trayText(state, { monitoring, calibrated, idle, snoozeUntilLabel = "" }
   }
 }
 
-module.exports = { BASELINE_VERSION, trayState, trayText, ICON };
+module.exports = { BASELINE_VERSION, trayState, trayText, ICON, DOCK };

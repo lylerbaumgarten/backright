@@ -1,4 +1,5 @@
-// Generates the app icon (assets/icon.png + icon.icns) and the menu-bar glyphs (assets/tray*.png).
+// Generates the app icon (assets/icon.png + icon.icns), the status-dot Dock icons (assets/dock-*.png)
+// and the menu-bar glyphs (assets/tray*.png).
 // Pure Node — shapes are rendered from signed-distance functions and written as PNG by hand, so there are
 // no image tools or npm packages involved.   Run: npm run icon   (iconutil is macOS-only; PNGs work anywhere)
 import { deflateSync, crc32 } from "node:zlib";
@@ -46,8 +47,11 @@ function render(size, paint) {
   return png(size, size, buf);
 }
 
-// ---------- app icon: green squircle, white upright figure, small amber "nudge" dot ----------
-function appIcon(x, y, px) {
+// ---------- app icon: green squircle + white upright figure; an optional status dot (top right) ----------
+// Variants are used for the live Dock icon (green = monitoring, amber = nudging, grey = snoozed, none = off).
+// The static icon (Finder / Launchpad / Dock when not running) has no dot.
+const DOTS = { off: null, active: [70, 224, 122], warn: [240, 162, 58], snooze: [150, 160, 168] };
+const appIconWith = dot => (x, y, px) => {
   const d = rrect(x, y, 512, 512, 412, 412, 186);                      // macOS icon grid: 824px body in a 1024 canvas
   const body = cov(d, px);
   if (body <= 0) return [0, 0, 0, 0];
@@ -57,11 +61,13 @@ function appIcon(x, y, px) {
   c = over(c, white, cov(bust, px));
   c = over(c, white, cov(rrect(x, y, 512, 545, 50, 64, 24), px));       // neck
   c = over(c, white, cov(circle(x, y, 512, 395, 122), px));             // head
-  // amber dot (the nudge), with a ring so it reads against both green and white
-  c = over(c, white, cov(circle(x, y, 745, 280, 70), px));
-  c = over(c, [240, 162, 58], cov(circle(x, y, 745, 280, 56), px));
+  if (dot) {                                                            // ring so it reads against both green and white
+    c = over(c, white, cov(circle(x, y, 750, 275, 92), px));
+    c = over(c, dot, cov(circle(x, y, 750, 275, 74), px));
+  }
   return [...c, body];
-}
+};
+const appIcon = appIconWith(DOTS.off);
 
 // ---------- menu-bar glyphs ----------
 // Outline/dot ones are black + alpha "template" images (macOS tints them for light/dark menu bars); the green and amber ones are coloured.
@@ -83,6 +89,7 @@ const GLYPHS = {
 
 // ---------- write everything ----------
 writeFileSync(path.join(assets, "icon.png"), render(1024, appIcon));
+for (const state of ["active", "warn", "snooze", "off"]) writeFileSync(path.join(assets, `dock-${state}.png`), render(512, appIconWith(DOTS[state])));
 for (const [name, paint] of Object.entries(GLYPHS)) {
   writeFileSync(path.join(assets, `${name}.png`), render(22, paint));
   writeFileSync(path.join(assets, `${name}@2x.png`), render(44, paint));
@@ -97,4 +104,4 @@ if (process.platform === "darwin") {
   execFileSync("iconutil", ["-c", "icns", set, "-o", path.join(assets, "icon.icns")]);
   rmSync(set, { recursive: true, force: true });
 }
-console.log("assets/ ready: icon.png, icon.icns, tray*.png");
+console.log("assets/ ready: icon.png, icon.icns, dock-*.png, tray*.png");

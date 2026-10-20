@@ -1,6 +1,6 @@
 const { app, BrowserWindow, Tray, Menu, screen, ipcMain, session, protocol, powerMonitor, nativeImage, systemPreferences, shell } = require("electron");
 const path = require("node:path");
-const { BASELINE_VERSION, trayState, trayText, ICON } = require("./tray-state");
+const { BASELINE_VERSION, trayState, trayText, ICON, DOCK } = require("./tray-state");
 const fs = require("node:fs");
 
 const ROOT = path.resolve(__dirname, "../..");
@@ -144,7 +144,7 @@ function syncOverlays() {
   }
   // setVisibleOnAllWorkspaces(…, { visibleOnFullScreen: true }) quietly turns a macOS app into a menu-bar-only
   // "accessory" and removes its Dock icon. We want the Dock icon (it's how you reopen a closed window), so restore it.
-  if (process.platform === "darwin") app.dock?.show();
+  if (process.platform === "darwin") Promise.resolve(app.dock?.show()).then(updateTray);   // show() can reset the Dock icon; re-apply the status one
 }
 
 function pushOverlayState(win) {
@@ -217,6 +217,9 @@ function trayImage(name) {
   })();
 }
 
+const dockImages = {};
+const dockImage = name => dockImages[name] ??= nativeImage.createFromPath(path.join(ROOT, `assets/${name}.png`));
+
 let idle = false;   // screen locked / asleep
 const isCalibrated = () => settings.baselines?.[settings.mode]?.v === BASELINE_VERSION;
 const snoozeLabel = () => new Date(snoozeUntil).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
@@ -233,6 +236,12 @@ function updateTray() {
   if (process.env.POSTURE_DEBUG) console.log(`[tray] ${state} — ${tip} | image ${ICON[state]} empty=${__img.isEmpty()} size=${JSON.stringify(__img.getSize())} template=${__img.isTemplateImage()}`);
   tray.setImage(__img);
   tray.setToolTip(tip);
+  // Dock icon = app icon + status dot (green monitoring · amber nudging · grey snoozed · none off).
+  if (process.platform === "darwin") {
+    const dock = dockImage(DOCK[state]);
+    if (process.env.POSTURE_DEBUG) console.log(`[dock] ${DOCK[state]} empty=${dock.isEmpty()} size=${JSON.stringify(dock.getSize())}`);
+    app.dock?.setIcon(dock);
+  }
 }
 
 function rebuildTray() {
@@ -286,7 +295,6 @@ app.whenReady().then(() => {
   registerAppProtocol();
   lockDownNetwork(session.defaultSession);
   // Normal Dock presence (so there is always an icon to click to reopen the window); the tray icon complements it.
-  if (process.platform === "darwin") app.dock?.setIcon(nativeImage.createFromPath(path.join(ROOT, "assets/icon.png")));
 
   tray = new Tray(trayImage(ICON.off));
   tray.on("click", showPanel);

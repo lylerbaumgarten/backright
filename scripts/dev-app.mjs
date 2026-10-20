@@ -55,6 +55,9 @@ rmSync(dest, { recursive: true, force: true }); mkdirSync(dest, { recursive: tru
 for (const dir of ["src", "vendor", "assets"]) cpSync(path.join(root, dir), path.join(dest, dir), { recursive: true });
 writeFileSync(path.join(dest, "package.json"), JSON.stringify({ name: pkg.name, productName: pkg.productName, version: pkg.version, main: pkg.main }, null, 2));
 
+cpSync(path.join(root, "assets/icon.icns"), path.join(res, "icon.icns"));   // keep the static icon current (Finder/Launchpad)
+spawnSync("touch", [app]);                                                       // nudge macOS to refresh its icon cache
+
 // 3. quit any running copy (it owns the menu-bar icon), optionally install, launch
 spawnSync("pkill", ["-f", "Posture.app/Contents/MacOS"], { stdio: "ignore" });
 await new Promise(r => setTimeout(r, 800));

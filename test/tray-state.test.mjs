@@ -4,7 +4,7 @@ import fs from "node:fs";
 import { createRequire } from "node:module";
 import { BASELINE_VERSION as RENDERER_VERSION } from "../src/renderer/posture.js";
 
-const { trayState, trayText, ICON, BASELINE_VERSION } = createRequire(import.meta.url)("../src/main/tray-state.js");
+const { trayState, trayText, ICON, DOCK, BASELINE_VERSION } = createRequire(import.meta.url)("../src/main/tray-state.js");
 const base = { warning: false, monitoring: true, calibrated: true, idle: false, snoozed: false };
 
 test("monitoring + calibrated + nothing wrong → active", () => assert.equal(trayState(base), "active"));
@@ -22,6 +22,16 @@ test("every state has an icon file; only the green and amber icons are non-templ
     for (const suffix of ["", "@2x"]) assert.ok(fs.existsSync(new URL(`../assets/${ICON[state]}${suffix}.png`, import.meta.url)), `${ICON[state]}${suffix}.png`);
   }
   assert.deepEqual(Object.values(ICON).filter(n => !n.endsWith("Template")).sort(), ["trayActive", "trayWarn"]);
+});
+
+test("every state has a Dock icon variant, and they are all different images", () => {
+  const sizes = new Set();
+  for (const state of ["warn", "active", "snooze", "off"]) {
+    const f = new URL(`../assets/${DOCK[state]}.png`, import.meta.url);
+    assert.ok(fs.existsSync(f), `${DOCK[state]}.png`);
+    sizes.add(fs.readFileSync(f).toString("base64"));
+  }
+  assert.equal(sizes.size, 4);
 });
 
 test("labels say why it's off", () => {
