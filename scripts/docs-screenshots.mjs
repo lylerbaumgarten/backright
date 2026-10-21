@@ -7,6 +7,7 @@
 // on, so nothing of you or your room can end up in a screenshot, and it never invents posture readings: states
 // that need a live camera (the Monitor tab "Good posture" readout, the camera preview) are not captured here.
 //
+// The Progress screenshot shows SAMPLE history (scripts/lib/sample-history.mjs) written into the throwaway profile; the README says so.
 // Two figures are illustrations rather than captures, because a real screen capture needs OS permissions:
 // the status-icon strip (the real icon files, composed on a page) and the nudge (the real overlay CSS over a
 // mock desktop). They are labelled as illustrations in the README.
@@ -15,6 +16,8 @@ import { mkdirSync, mkdtempSync, writeFileSync, readFileSync, rmSync, existsSync
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { dateKey } from "../src/renderer/history.js";
+import { sampleHistory } from "./lib/sample-history.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const outDir = path.join(root, "docs/screenshots");
@@ -24,7 +27,8 @@ mkdirSync(outDir, { recursive: true });
 
 execFileSync("node", [path.join(root, "scripts/dev-app.mjs"), "--no-launch"], { stdio: "inherit" });
 
-const profile = mkdtempSync(path.join(os.tmpdir(), "posture-docs-"));
+const profile = mkdtempSync(path.join(os.tmpdir(), "backright-docs-"));
+writeFileSync(path.join(profile, "history.json"), JSON.stringify(sampleHistory(dateKey(Date.now()))));   // SAMPLE data for the Progress screenshot
 const child = spawn(binary, [`--user-data-dir=${profile}`, `--remote-debugging-port=${PORT}`], { stdio: "ignore" });
 const cleanup = () => { child.kill(); rmSync(profile, { recursive: true, force: true }); for (const f of tempPages) rmSync(f, { force: true }); };
 process.on("exit", cleanup);
@@ -80,6 +84,8 @@ await click(".guide-nav button[data-sub='3']"); await shot("09-guide-standing-sp
 await setSettings({ mode: "sit", onboarded: true, baselines: { sit: { neck: 0.7, size: 0.42, tilt: 0, v: 2 }, stand: null }, setupDone: { sit: true, stand: false } });
 await reload();
 await shot("10-monitor", { maxHeight: 1500 });
+await shot("10b-move-card", { selector: "#moveCard" });
+await click("#tabs button[data-tab=progress]"); await sleep(400); await shot("10c-progress-sample-data", { maxHeight: 1700 });
 await click("#tabs button[data-tab=setup]"); await shot("11-desk-setup-tab", { until: "#steps .gcard:nth-child(2)" });   // heading, overview, first step — then a clean cut
 await click("#tabs button[data-tab=privacy]"); await shot("12-privacy-tab", { maxHeight: 900 });
 
@@ -137,6 +143,19 @@ await composite("14-nudge-illustration", `<!doctype html><meta charset="utf-8"><
 <div id="glow"></div>
 <div id="pill"><span class="msg">Sit tall — head back, shoulders down</span><button>Pause</button><button class="primary">Settings</button></div>
 <div class="tag">Illustration: the app's real overlay styling over a mock desktop</div>`, { width: 1100, height: 660 });
+
+await composite("15-break-reminder-illustration", `<!doctype html><meta charset="utf-8"><style>
+  html,body{margin:0}body{width:1100px;height:300px;position:relative;overflow:hidden;font:14px system-ui,sans-serif;background:linear-gradient(135deg,#d9e4ee,#eef2f6 55%,#e7e1f0)}
+  .win{position:absolute;left:150px;top:90px;width:560px;height:240px;background:#fff;border-radius:12px;box-shadow:0 18px 50px #0003}
+  #pill{${pillCss.replace(/transform:[^;]+;/, "").replace(/opacity:[^;]+;/, "").replace(/transition:[^;]+;/, "").replace(/background:[^;]+;/, "")}
+    background:#e4f3e8;color:#12351f;position:absolute;top:18px;left:50%;margin-left:-270px;width:540px;height:46px;display:flex;align-items:center;gap:10px;box-sizing:border-box;padding:0 8px 0 18px}
+  #pill .msg{flex:1;white-space:nowrap;font-weight:600}#pill button{font:inherit;font-size:13px;font-weight:600;border:0;border-radius:999px;padding:8px 12px;background:rgba(18,53,31,.12)}
+  #pill button.primary{background:#12351f;color:#e4f3e8}
+  .tag{position:absolute;right:16px;bottom:12px;font-size:12px;color:#6b726d}
+  .win u{position:absolute;left:28px;height:12px;border-radius:6px;background:#e6e9ee}
+</style><div class="win"><u style="top:40px;width:300px"></u><u style="top:68px;width:420px"></u><u style="top:96px;width:360px"></u><u style="top:144px;width:440px"></u></div>
+<div id="pill"><span class="msg">Time to move — a quick stretch?</span><button class="primary">Show me</button><button>Snooze 10 min</button><button>Skip</button></div>
+<div class="tag">Illustration: the movement-break reminder over a mock desktop</div>`, { width: 1100, height: 300 });
 
 ws.close();
 cleanup();

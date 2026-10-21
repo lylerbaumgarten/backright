@@ -38,6 +38,10 @@ BackRight isn't notarized (that needs a paid Apple developer account), so macOS 
     <td><img src="docs/screenshots/10-monitor.png" alt="Monitor tab with settings"><br><sub><b>7.</b> Monitor — sensitivity, delay and how often to check</sub></td>
     <td><img src="docs/screenshots/12-privacy-tab.png" alt="Privacy tab"><br><sub><b>8.</b> Privacy — always one tab away</sub></td>
   </tr>
+  <tr>
+    <td><img src="docs/screenshots/10b-move-card.png" alt="Move card with stretch suggestions"><br><sub><b>9.</b> Move — easy stretches at your desk or standing, with a guided 2-minute routine</sub></td>
+    <td><img src="docs/screenshots/10c-progress-sample-data.png" alt="Progress tab showing sample data"><br><sub><b>10.</b> Progress — today, whether it's getting better, and a daily chart (<b>sample data</b> shown here)</sub></td>
+  </tr>
 </table>
 
 **Status at a glance** — the menu-bar icon and the Dock icon both follow what the app is doing (illustration composed from the app's real icon files):
@@ -47,6 +51,10 @@ BackRight isn't notarized (that needs a paid Apple developer account), so macOS 
 **The nudge** — a faint glow around the screen edges plus a small pill with *Pause* and *Settings*. It never steals focus and stays out of screenshots (illustration: the app's real overlay styling over a mock desktop):
 
 <img src="docs/screenshots/14-nudge-illustration.png" alt="The nudge: amber edge glow and a pill with Pause and Settings" width="800">
+
+**Movement breaks** — after 30 minutes of sitting or standing at your screen, a small green pill asks if you'd like a quick stretch (*Show me*, *Snooze 10 min*, or *Skip*). Never modal, never takes focus; change the interval or turn it off in Monitor → Settings (illustration):
+
+<img src="docs/screenshots/15-break-reminder-illustration.png" alt="The movement-break reminder pill" width="800">
 
 <sub>Screenshots are generated from the running app by `npm run docs:screenshots` (macOS). They never switch the camera on, so there is no live camera preview among them.</sub>
 
@@ -91,13 +99,16 @@ Hover it for a tooltip with the same in words; the menu's top line says it too.
 3. **Calibrate** — hold the posture you want to keep for a few seconds. That's your baseline. Not sure your desk is set up well? Open the **Desk setup guide** from this screen: an illustrated sub-page (overview, one page per step, and a camera check) that returns you to calibration.
 4. **Start monitoring.** If you drift from the baseline (head dropping toward your shoulders, leaning toward the screen, shoulders uneven) for a few seconds, a soft glow appears around every screen. It fades when you correct.
 
+5. **Move.** The Monitor tab has a **Move** card with easy stretches for your desk or for standing up, and a guided 2-minute routine. Every 30 minutes of screen time BackRight also offers a movement break (change or turn off under Settings); taking one counts toward your history.
+6. **Progress.** The **Progress** tab shows how much of your time you held good posture today, whether this week beats last week, and a daily chart. You can export it as CSV or delete it any time.
+
 The guide is also in the **Desk setup** tab any time, and a reminder banner on the Monitor tab appears until you've been through it.
 
 ## Privacy — how it's enforced
 
 - **Local only.** The pose model (MediaPipe Pose Landmarker, lite) is bundled in `vendor/`; nothing is fetched at runtime.
 - **Network blocked.** The main process cancels every request that isn't the app's own `app://` content, and the CSP is `default-src 'none'; connect-src 'self'`. Offline behaves identically.
-- **No frames kept.** A frame is analysed in memory and dropped. Only landmark-derived numbers exist afterwards. The only file written is `settings.json` (your preferences and calibration numbers) in the app's user-data folder.
+- **No frames kept.** A frame is analysed in memory and dropped. Only landmark-derived numbers exist afterwards. The only files written are `settings.json` (your preferences and calibration numbers) and `history.json` (daily totals: minutes monitored, minutes slipping, slips, breaks — numbers only) in the app's user-data folder, plus a CSV only if you choose *Export*. All disk writes go through one module, `src/main/storage.js`, and a test enforces that.
 - **Camera only when needed.** The camera stream is opened for monitoring, calibration or the live setup check, and closed otherwise, so the camera light goes off when paused or when the screen is locked.
 - **Tiny bridge.** The renderer talks to the main process through a preload with a handful of settings/boolean calls — there's no channel that carries image data.
 - **Prove it yourself.** The onboarding's privacy step shows a live camera preview with counters — frames analysed on this Mac, outside connections made (always 0, they're all blocked) and Wi-Fi state. Turn off Wi-Fi and watch the posture check keep running.
@@ -106,8 +117,8 @@ The guide is also in the **Desk setup** tab any time, and a reminder banner on t
 ## Layout
 
 ```
-src/main/       Electron main: tray, per-display overlay windows, network lockdown, settings
-src/renderer/   Panel UI, pose detection, posture maths (posture.js is pure and unit-tested)
+src/main/       Electron main: tray, per-display overlay windows, network lockdown, storage (the only disk writer)
+src/renderer/   Panel UI, pose detection; posture, breaks, routine, history and stretches are pure, unit-tested modules
 vendor/         MediaPipe runtime + model (generated by `npm run vendor`, git-ignored)
 test/           Unit tests for the posture maths and privacy guardrails
 ```

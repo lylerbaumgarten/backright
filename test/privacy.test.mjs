@@ -52,3 +52,10 @@ test("CSP forbids outside connections", () => {
   assert.match(main, /default-src 'none'/);
   assert.match(main, /connect-src 'self'/);
 });
+
+test("the privacy wording tells the truth about what is saved (settings AND posture history, numbers only)", () => {
+  const html = read(path.join(src, "renderer/index.html")), onboarding = read(path.join(src, "renderer/onboarding.js"));
+  assert.match(html, /posture history/i); assert.match(html, /settings/i); assert.match(html, /export or delete/i);
+  assert.doesNotMatch(html, /only thing saved to disk is a small settings file/i, "stale wording from before history existed");
+  assert.match(onboarding, /All that's kept are numbers/);
+});

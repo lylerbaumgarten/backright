@@ -3,7 +3,8 @@
 import { launch, reporter, sleep, onScreenWindows, existsSync, readFileSync } from "./lib/e2e.mjs";
 import { writeFileSync } from "node:fs";
 import path from "node:path";
-import { dateKey, shiftKey } from "../src/renderer/history.js";
+import { dateKey } from "../src/renderer/history.js";
+import { sampleHistory } from "./lib/sample-history.mjs";
 
 const r = reporter();
 const PILL = [500, 48];
@@ -60,14 +61,8 @@ const pillHidden = async P => (await P.ev("window.__backright.overlays()")).pill
 
 // ============ posture history + Progress tab ============
 {
-  // Three weeks of plausible data: last week ~75% good posture, this week ~90% (an improving trend).
-  const todayKey = dateKey(Date.now()), days = {};
-  // "this week" in the app = the last 7 days including today, so seed days 1–6 as this week (today is filled in live below)
-  for (let i = 1; i <= 21; i++) {
-    const thisWeek = i <= 6, monitored = 3 * 3600 + (i % 3) * 600;
-    days[shiftKey(todayKey, -i)] = { sit: { monitoredSec: monitored, slippingSec: monitored * (thisWeek ? 0.10 : 0.25), slips: thisWeek ? 9 : 18, bestStreakSec: 1500, breaks: thisWeek ? 5 : 3, sens: thisWeek ? 1 : 1.25 } };
-  }
-  const seeded = { version: 1, days };
+  const todayKey = dateKey(Date.now());
+  const seeded = sampleHistory(todayKey);
   let app = await launch({ history: seeded, port: 9371 });
   let P = app.panel;
   await P.click('#tabs button[data-tab="progress"]'); await sleep(500);

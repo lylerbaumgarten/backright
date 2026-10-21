@@ -175,3 +175,4 @@ label.inline select { margin:0 4px; }
 .c-bar.good { fill:var(--ok); } .c-bar.fair { fill:var(--warn); } .c-bar.poor { fill:var(--bad); }
 .c-bar.thin { fill:var(--muted); opacity:.5; } .c-bar.empty { fill:var(--line); }
 @media (max-width:560px) { .stats { grid-template-columns:repeat(2,1fr); } .trow { grid-template-columns:1fr; gap:2px; } }
+.today-line { margin:6px 0 2px; font-size:14px; font-weight:600; color:var(--ok); }

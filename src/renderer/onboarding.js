@@ -165,7 +165,9 @@ export function createWizard(root, api) {
         <p class="hint">Where to find things later:</p>
         <ul class="points">
           <li><b>Desk setup tab</b> — the illustrated guide${setup ? "" : ", which you haven't gone through yet"}, and the camera check</li>
-          <li><b>Monitor tab</b> — recalibrate, sensitivity, test the nudge</li>
+          <li><b>Monitor tab</b> — recalibrate, sensitivity, test the nudge, and the <b>Move</b> card with quick stretches</li>
+          <li><b>Progress tab</b> — how often you slip and whether it's getting better, day by day</li>
+          <li><b>Movement breaks</b> — after 30 minutes at your desk BackRight suggests a quick stretch (change it or turn it off in Monitor → Settings)</li>
           <li><b>Menu-bar and Dock icons</b> — status at a glance; pause or snooze from the menu-bar icon</li>
           <li><b>Sit-stand desk?</b> Switch to the other mode at the top right and set it up too</li>
         </ul>

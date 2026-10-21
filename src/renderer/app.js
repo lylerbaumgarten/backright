@@ -151,6 +151,14 @@ const progress = createProgress($("tab-progress"), {
 });
 setInterval(() => { if (tab === "progress") progress.render(); }, 5000);   // live numbers while you're looking at them
 
+/** "Today: 92% good posture · 2 slips · 1 break" under the status — progress at a glance (needs a minute of data). */
+function renderTodayLine() {
+  const t = H.today(recorder.data(), H.dateKey(epochNow())), el = $("todayLine");
+  el.hidden = t.monitoredSec < 60;
+  if (!el.hidden) el.textContent = `Today: ${Math.round(t.goodPct)}% good posture · ${t.slips} slip${t.slips === 1 ? "" : "s"} · ${t.breaks} break${t.breaks === 1 ? "" : "s"} · ${H.formatDuration(t.monitoredSec)} monitored`;
+}
+setInterval(() => { if (tab === "monitor") renderTodayLine(); }, 5000);
+
 // ---------- calibration ----------
 function finishCalib(ok) { const cb = calibCb; calibCb = null; cb?.(ok); }
 
@@ -249,6 +257,7 @@ function render() {
   document.querySelectorAll("#tabs button").forEach(b => b.classList.toggle("on", !inWizard && b.dataset.tab === tab));
   for (const t of ["onboard", "monitor", "progress", "setup", "privacy"]) $("tab-" + t).hidden = t !== tab;
   if (tab === "progress") progress.render();
+  renderTodayLine();
   if (!inWizard) placeStage(null);                   // never leave the preview parked inside a hidden section
   $("tabs").classList.toggle("locked", inWizard);   // can't wander off mid-walkthrough; "Close" is the exit
   $("modeSeg").hidden = inWizard;
