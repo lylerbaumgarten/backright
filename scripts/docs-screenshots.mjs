@@ -85,6 +85,7 @@ await setSettings({ mode: "sit", modes: ["sit", "stand"], onboarded: true, basel
 await reload();
 await shot("10-monitor", { maxHeight: 1500 });
 await shot("10b-move-card", { selector: "#moveCard" });
+await click("#tabs button[data-tab=settings]"); await shot("10d-settings-tab", { maxHeight: 1500 });
 await click("#tabs button[data-tab=progress]"); await sleep(400); await shot("10c-progress-sample-data", { maxHeight: 1700 });
 await click("#tabs button[data-tab=setup]"); await shot("11-desk-setup-tab", { until: "#steps .gcard:nth-child(2)" });   // heading, overview, first step — then a clean cut
 await click("#tabs button[data-tab=privacy]"); await shot("12-privacy-tab", { maxHeight: 900 });

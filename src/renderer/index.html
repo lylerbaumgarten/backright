@@ -21,6 +21,7 @@
       <button data-tab="monitor" class="on">Monitor</button>
       <button data-tab="progress">Progress</button>
       <button data-tab="setup" id="tabSetup">Desk setup</button>
+      <button data-tab="settings">Settings</button>
       <button data-tab="privacy">Privacy</button>
     </nav>
     <div class="tabhint" id="tabHint" hidden>
@@ -71,30 +72,6 @@
     </div>
 
     <div class="card" id="moveCard"></div>
-
-    <div class="card" id="settingsCard">
-      <h2>Settings</h2>
-      <label>Sensitivity <span id="sensVal"></span><input type="range" id="sens" min="0.5" max="2" step="0.05"></label>
-      <label>Nudge after <span id="delayVal"></span> of slipping<input type="range" id="delay" min="1" max="30" step="1"></label>
-      <label>Check posture every <span id="everyVal"></span><input type="range" id="every" min="0.2" max="5" step="0.1"></label>
-      <p class="hint">A slower check uses less CPU and battery. Posture changes slowly, so every half second or slower is plenty.</p>
-      <div class="row">
-        <label class="inline"><input type="checkbox" id="glowOn"> Screen glow</label>
-        <label class="inline"><input type="checkbox" id="pillOn"> Reminder pill</label>
-      </div>
-      <h3 class="subhead">How you work</h3>
-      <div class="row">
-        <label class="inline"><input type="checkbox" id="modeSit"> Sitting</label>
-        <label class="inline"><input type="checkbox" id="modeStand"> Standing</label>
-      </div>
-      <p class="hint">Choose both for a sit-stand desk; each is calibrated separately. With only one, the Sitting / Standing switch is hidden.</p>
-      <h3 class="subhead">Movement breaks</h3>
-      <div class="row">
-        <label class="inline"><input type="checkbox" id="breakOn"> Remind me to move</label>
-        <label class="inline">every <select id="breakEvery"><option value="20">20 min</option><option value="30">30 min</option><option value="45">45 min</option><option value="60">60 min</option></select> at your desk</label>
-      </div>
-      <p class="hint">Counts only the time you're at your desk while monitoring is on. Stepping away for 5 minutes counts as a break.</p>
-    </div>
   </section>
 
   <section id="tab-progress" hidden></section>
@@ -118,6 +95,32 @@
         <b>You're set up.</b> Now sit (or stand) the way you want to hold — we'll record that as your alignment.
         <div class="row"><button class="primary" id="goCalibrate">Calibrate my alignment</button></div>
       </div>
+    </div>
+  </section>
+
+  <section id="tab-settings" hidden>
+    <div class="card" id="settingsCard">
+      <h2>Settings</h2>
+      <label>Sensitivity <span id="sensVal"></span><input type="range" id="sens" min="0.5" max="2" step="0.05"></label>
+      <label>Nudge after <span id="delayVal"></span> of slipping<input type="range" id="delay" min="1" max="30" step="1"></label>
+      <label>Check posture every <span id="everyVal"></span><input type="range" id="every" min="0.2" max="5" step="0.1"></label>
+      <p class="hint">A slower check uses less CPU and battery. Posture changes slowly, so every half second or slower is plenty.</p>
+      <div class="row">
+        <label class="inline"><input type="checkbox" id="glowOn"> Screen glow</label>
+        <label class="inline"><input type="checkbox" id="pillOn"> Reminder pill</label>
+      </div>
+      <h3 class="subhead">How you work</h3>
+      <div class="row">
+        <label class="inline"><input type="checkbox" id="modeSit"> Sitting</label>
+        <label class="inline"><input type="checkbox" id="modeStand"> Standing</label>
+      </div>
+      <p class="hint">Choose both for a sit-stand desk; each is calibrated separately. With only one, the Sitting / Standing switch is hidden.</p>
+      <h3 class="subhead">Movement breaks</h3>
+      <div class="row">
+        <label class="inline"><input type="checkbox" id="breakOn"> Remind me to move</label>
+        <label class="inline">every <select id="breakEvery"><option value="20">20 min</option><option value="30">30 min</option><option value="45">45 min</option><option value="60">60 min</option></select> at your desk</label>
+      </div>
+      <p class="hint">Counts only the time you're at your desk while monitoring is on. Stepping away for 5 minutes counts as a break.</p>
     </div>
   </section>
 

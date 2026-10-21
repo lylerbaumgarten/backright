@@ -22,7 +22,7 @@ let settings, idle = false, previewOn = false, modelReady = false;
 let calib = null, calibCb = null;   // calib: { phase: "countdown"|"sample", until, samples: [] }
 let setupLive = false;
 let timer = null, lastTick = 0;
-let tab = "monitor";                // monitor | setup | privacy | onboard (the first-run walkthrough)
+let tab = "monitor";                // monitor | progress | setup | settings | privacy | onboard (the first-run walkthrough)
 let cameraBlocked = false;
 let notice = "";                    // transient message shown under the status (survives re-renders)
 let frames = 0;                     // detections run since launch (shown in the privacy step)
@@ -256,7 +256,7 @@ function render() {
   const inWizard = tab === "onboard";
   document.querySelectorAll("#modeSeg button").forEach(b => b.classList.toggle("on", b.dataset.mode === settings.mode));
   document.querySelectorAll("#tabs button").forEach(b => b.classList.toggle("on", !inWizard && b.dataset.tab === tab));
-  for (const t of ["onboard", "monitor", "progress", "setup", "privacy"]) $("tab-" + t).hidden = t !== tab;
+  for (const t of ["onboard", "monitor", "progress", "setup", "settings", "privacy"]) $("tab-" + t).hidden = t !== tab;
   if (tab === "progress") progress.render();
   renderTodayLine();
   if (!inWizard) placeStage(null);                   // never leave the preview parked inside a hidden section
@@ -391,8 +391,8 @@ $("goCalibrate").onclick = () => { setupLive = false; startCalibration(); };
 
 window.posture.onSettings(s => { settings = s; monitor.reset(); render(); syncCamera(); });
 window.posture.onToggleMonitoring(toggleMonitoring);
-window.posture.onShowSettings(() => {   // from the nudge pill: land on the Monitor tab's settings (unless mid-walkthrough)
-  if (tab !== "onboard") { tab = "monitor"; render(); $("settingsCard").scrollIntoView({ behavior: "smooth", block: "start" }); }
+window.posture.onShowSettings(() => {   // from the nudge pill: land on the Settings tab (unless mid-walkthrough)
+  if (tab !== "onboard") { tab = "settings"; render(); }
 });
 window.posture.onIdle(v => { idle = v; monitor.reset(); window.posture.setWarning(false); breakShowing = false; render(); syncCamera(); });
 // Buttons on the "time to move" pill, and the tray's "Take a movement break…"

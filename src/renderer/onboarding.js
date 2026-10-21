@@ -99,7 +99,7 @@ export function createWizard(root, api) {
         </div>
         <p class="hint">${modes.length > 1
           ? "Both: you'll calibrate each once, then switch with the Sitting / Standing control at the top right (or from the menu-bar icon)."
-          : `Only ${modeWord(modes[0])}: setup and the rest of the app are just for ${modeWord(modes[0])}. You can change this any time in Monitor → Settings.`}</p>
+          : `Only ${modeWord(modes[0])}: setup and the rest of the app are just for ${modeWord(modes[0])}. You can change this any time in the Settings tab.`}</p>
         <div class="row wiz-nav"><span class="spacer"></span><button class="primary" data-act="next">Continue →</button></div>`;
     }
 
@@ -180,7 +180,7 @@ export function createWizard(root, api) {
           <li><b>Desk setup tab</b> — the illustrated guide${setup ? "" : ", which you haven't gone through yet"}, and the camera check</li>
           <li><b>Monitor tab</b> — recalibrate, sensitivity, test the nudge, and the <b>Move</b> card with quick stretches</li>
           <li><b>Progress tab</b> — how often you slip and whether it's getting better, day by day</li>
-          <li><b>Movement breaks</b> — after 30 minutes at your desk BackRight suggests a quick stretch (change it or turn it off in Monitor → Settings)</li>
+          <li><b>Movement breaks</b> — after 30 minutes at your desk BackRight suggests a quick stretch (change it or turn it off in the Settings tab)</li>
           <li><b>Menu-bar and Dock icons</b> — status at a glance; pause or snooze from the menu-bar icon</li>
           ${modes.length > 1 ? `<li><b>Sitting / Standing switch</b> — top right of this window and in the menu-bar menu; each is calibrated separately</li>` : ""}
         </ul>

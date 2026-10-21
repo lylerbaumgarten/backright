@@ -35,12 +35,16 @@ BackRight isn't notarized (that needs a paid Apple developer account), so macOS 
     <td><img src="docs/screenshots/09-guide-standing-spine.png" alt="Guide page: standing posture line"><br><sub><b>6.</b> …and a separate set for standing desks</sub></td>
   </tr>
   <tr>
-    <td><img src="docs/screenshots/10-monitor.png" alt="Monitor tab with settings"><br><sub><b>7.</b> Monitor — sensitivity, delay and how often to check</sub></td>
+    <td><img src="docs/screenshots/10-monitor.png" alt="Monitor tab with settings"><br><sub><b>7.</b> Monitor — status, calibrate, test the nudge, quick stretches</sub></td>
     <td><img src="docs/screenshots/12-privacy-tab.png" alt="Privacy tab"><br><sub><b>8.</b> Privacy — always one tab away</sub></td>
   </tr>
   <tr>
     <td><img src="docs/screenshots/10b-move-card.png" alt="Move card with stretch suggestions"><br><sub><b>9.</b> Move — easy stretches at your desk or standing, with a guided 2-minute routine</sub></td>
     <td><img src="docs/screenshots/10c-progress-sample-data.png" alt="Progress tab showing sample data"><br><sub><b>10.</b> Progress — today, whether it's getting better, and a daily chart (<b>sample data</b> shown here)</sub></td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/10d-settings-tab.png" alt="Settings tab"><br><sub><b>11.</b> Settings — sensitivity, delay, how you work and movement-break timing</sub></td>
+    <td></td>
   </tr>
 </table>
 
@@ -52,7 +56,7 @@ BackRight isn't notarized (that needs a paid Apple developer account), so macOS 
 
 <img src="docs/screenshots/14-nudge-illustration.png" alt="The nudge: amber edge glow and a pill with Pause and Settings" width="800">
 
-**Movement breaks** — after 30 minutes of sitting or standing at your screen, a small green pill asks if you'd like a quick stretch (*Show me*, *Snooze 10 min*, or *Skip*). Never modal, never takes focus; change the interval or turn it off in Monitor → Settings (illustration):
+**Movement breaks** — after 30 minutes of sitting or standing at your screen, a small green pill asks if you'd like a quick stretch (*Show me*, *Snooze 10 min*, or *Skip*). Never modal, never takes focus; change the interval or turn it off in the Settings tab (illustration):
 
 <img src="docs/screenshots/15-break-reminder-illustration.png" alt="The movement-break reminder pill" width="800">
 
@@ -94,7 +98,7 @@ Hover it for a tooltip with the same in words; the menu's top line says it too.
 
 ## How to use it
 
-1. **Welcome** — tick Sitting, Standing or both (a sit-stand desk). Each gets its own calibration, and the rest of setup follows your choice: one mode means one calibration and no Sitting / Standing switch; both means you calibrate each, then switch between them. Change it any time in Monitor → Settings → How you work.
+1. **Welcome** — tick Sitting, Standing or both (a sit-stand desk). Each gets its own calibration, and the rest of setup follows your choice: one mode means one calibration and no Sitting / Standing switch; both means you calibrate each, then switch between them. Change it any time in Settings → How you work.
 2. **Camera & privacy** — what happens to the video, with a live preview you can test with Wi-Fi off.
 3. **Calibrate** — hold the posture you want to keep for a few seconds. That's your baseline. Not sure your desk is set up well? Open the **Desk setup guide** from this screen: an illustrated sub-page (overview, one page per step, and a camera check) that returns you to calibration.
 4. **Start monitoring.** If you drift from the baseline (head dropping toward your shoulders, leaning toward the screen, shoulders uneven) for a few seconds, a soft glow appears around every screen. It fades when you correct.

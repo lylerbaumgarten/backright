@@ -52,7 +52,7 @@ const pillHidden = async P => (await P.ev("window.__backright.overlays()")).pill
   r.check("Skip starts a fresh interval", (await hook("state().breakShowing")) === false && (await hook("state().activeMs")) === 0);
 
   await hook("sample(true, false, 70)"); await sleep(900);
-  await P.click("#breakOn"); await sleep(3000);               // turn reminders off while one is showing
+  await P.click('#tabs button[data-tab="settings"]'); await P.click("#breakOn"); await sleep(3000);               // turn reminders off while one is showing
   r.check("switching reminders off dismisses a showing reminder", (await pillHidden(P)) && (await hook("state().breakShowing")) === false);
 
   r.check("no errors anywhere in the app window", P.errors.length === 0, P.errors.join(" | "));
@@ -117,6 +117,18 @@ const pillHidden = async P => (await P.ev("window.__backright.overlays()")).pill
     return { app, P, text, tick, checked, label };
   };
 
+  // --- Settings live in their own tab, not on Monitor ---
+  {
+    const app = await launch({ port: 9372 }), P = app.panel;
+    const inTab = id => P.ev(`!!document.querySelector("#tab-settings #${id}")`), inMonitor = id => P.ev(`!!document.querySelector("#tab-monitor #${id}")`);
+    r.check("sensitivity, breaks and how-you-work controls are in the Settings tab", (await Promise.all(["sens", "delay", "breakOn", "modeSit", "glowOn"].map(inTab))).every(Boolean));
+    r.check("…and no longer on the Monitor tab", !(await Promise.all(["sens", "breakOn", "modeSit"].map(inMonitor))).some(Boolean));
+    await P.click('#tabs button[data-tab="settings"]'); await sleep(300);
+    r.check("clicking Settings shows it and hides Monitor", (await P.ev(`!document.getElementById("tab-settings").hidden && document.getElementById("tab-monitor").hidden`)));
+    r.check("no errors in the app window", P.errors.length === 0, P.errors.join(" | "));
+    await app.stop();
+  }
+
   // --- sitting only (the preselected default) ---
   let w = await walk("sit");
   r.check("welcome offers Sitting and Standing as checkboxes, Sitting preselected", (await w.checked("sit")) === true && (await w.checked("stand")) === false);
@@ -148,7 +160,8 @@ const pillHidden = async P => (await P.ev("window.__backright.overlays()")).pill
   r.check("the end mentions the Sitting / Standing switch", /Sitting \/ Standing switch/.test(await w.text("#tab-onboard")));
   await w.P.click('[data-act="finish"]'); await sleep(600);
   r.check("the Sitting / Standing switch is shown", (await w.P.ev(`document.getElementById("modeSeg").hidden`)) === false);
-  // changing it later from Settings
+  // changing it later from the Settings tab
+  await w.P.click('#tabs button[data-tab="settings"]'); await sleep(300);
   await w.P.ev(`(()=>{const c=document.getElementById("modeStand"); c.checked=false; c.dispatchEvent(new Event("change"))})()`); await sleep(500);
   r.check("Settings → untick Standing: back to a single mode, switch hidden, mode is sitting", (await w.P.ev(`document.getElementById("modeSeg").hidden`)) === true && (await w.P.ev(`window.__backright.state().mode`)) === "sit");
   r.check("no errors in the app window", w.P.errors.length === 0, w.P.errors.join(" | "));
