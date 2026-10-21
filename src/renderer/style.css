@@ -123,3 +123,32 @@ button.ghost:hover { color:var(--fg); }
 .chips li { font-size:12px; padding:3px 9px; border-radius:999px; background:var(--card); border:1px solid var(--line); color:var(--muted); }
 button.link { border:0; background:none; padding:0; color:var(--ok); font-weight:600; text-decoration:underline; cursor:pointer; }
 @media (max-width:560px) { .setup-card { flex-direction:column; align-items:flex-start; } }
+
+/* ---- Move card ---- */
+.card-head { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:4px; }
+.card-head h2 { margin:0; }
+.seg.small button { padding:4px 11px; font-size:13px; }
+.hint.tiny { font-size:12px; margin-top:12px; }
+.stretch-list { list-style:none; padding:0; margin:10px 0; }
+.stretch-list > li { border-top:1px solid var(--line); }
+.stretch-list > li:last-child { border-bottom:1px solid var(--line); }
+.stretch-list summary { display:flex; justify-content:space-between; align-items:baseline; gap:12px; padding:10px 2px; cursor:pointer; list-style:none; }
+.stretch-list summary::-webkit-details-marker { display:none; }
+.stretch-list summary::before { content:"▸"; color:var(--muted); width:1em; transition:transform .15s; }
+.stretch-list details[open] summary::before { transform:rotate(90deg); }
+.stretch-list .sname { font-weight:600; flex:1; }
+.stretch-list .smeta { color:var(--muted); font-size:13px; white-space:nowrap; }
+.stretch-list ol, .rt-steps { margin:2px 0 6px 1.6em; padding-left:1em; font-size:14px; }
+.stretch-list ol li, .rt-steps li { margin-bottom:4px; }
+.cue { color:var(--muted); font-size:13px; margin:4px 0 4px 1.6em; }
+.rt-steps + .cue, .routine > .cue { margin-left:0; }
+.caution { font-size:13px; color:var(--warn); margin:4px 0 8px 1.6em; }
+.routine > .caution { margin-left:0; }
+.routine .eyebrow { margin-top:0; }
+.routine h2 { font-size:20px; margin:2px 0 8px; }
+.rt-clock { display:flex; align-items:baseline; gap:8px; margin:6px 0 8px; }
+.rt-clock b { font-size:56px; line-height:1; font-variant-numeric:tabular-nums; }
+.rt-clock span { color:var(--muted); }
+.rt-bar { height:6px; border-radius:3px; background:var(--line); overflow:hidden; margin-bottom:12px; }
+.rt-bar i { display:block; height:100%; background:var(--ok); transition:width .25s linear; }
+.routine-done { text-align:left; }

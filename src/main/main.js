@@ -35,6 +35,7 @@ const DEFAULTS = {
   glow: true,
   pill: true,
   monitoring: false,
+  moveWhere: null,             // "desk" | "stand" — where you want movement suggestions; null = follow the sit/stand mode
   breaks: { enabled: true, intervalMin: 30 },   // "time to move" reminders, counted in minutes spent at the desk
 };
 

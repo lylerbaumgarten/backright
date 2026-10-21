@@ -3,6 +3,7 @@ import { measure, average, createMonitor, setupChecks, BASELINE_VERSION } from "
 import { GUIDE, CHECK_LABELS } from "./guide.js";
 import { art } from "./guide-art.js";
 import { createWizard } from "./onboarding.js";
+import { createMoveCard } from "./move.js";
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -226,7 +227,16 @@ function render() {
     setStatus(settings.monitoring && !baseline() ? `Calibrate for ${modeName(mode)} to begin` : idle ? "Paused — screen locked" : "Not monitoring");
   }
   renderSetup();
+  move.refresh();
 }
+
+// ---------- movement suggestions ----------
+const moveWhere = () => settings.moveWhere || (settings.mode === "stand" ? "stand" : "desk");
+const move = createMoveCard($("moveCard"), {
+  where: moveWhere,
+  setWhere: w => save({ moveWhere: w }),
+  onBreak: info => console.log("[break]", info.source, info.seconds),   // wired to history + the reminder timer below
+});
 
 // ---------- walkthrough ----------
 const wizard = createWizard($("tab-onboard"), {
