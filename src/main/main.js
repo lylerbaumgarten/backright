@@ -2,6 +2,7 @@ const { app, BrowserWindow, Tray, Menu, screen, ipcMain, session, protocol, powe
 const path = require("node:path");
 const { BASELINE_VERSION, trayState, trayText, ICON, DOCK } = require("./tray-state");
 const fs = require("node:fs");
+const { createStorage } = require("./storage");
 
 const ROOT = path.resolve(__dirname, "../..");
 const RENDERER = path.join(ROOT, "src/renderer");
@@ -34,6 +35,7 @@ const DEFAULTS = {
   glow: true,
   pill: true,
   monitoring: false,
+  breaks: { enabled: true, intervalMin: 30 },   // "time to move" reminders, counted in minutes spent at the desk
 };
 
 let settings = { ...DEFAULTS };
@@ -41,14 +43,10 @@ let panel, tray;
 const overlays = new Map(); // displayId -> { sig, wins: BrowserWindow[] } (edge strips)
 let warning = false;
 
-// ---- settings: numbers and toggles only. Never any image data. ----
-const settingsFile = () => path.join(app.getPath("userData"), "settings.json");
-function loadSettings() {
-  try { settings = { ...DEFAULTS, ...JSON.parse(fs.readFileSync(settingsFile(), "utf8")) }; } catch { settings = { ...DEFAULTS }; }
-}
-function saveSettings() {
-  try { fs.mkdirSync(path.dirname(settingsFile()), { recursive: true }); fs.writeFileSync(settingsFile(), JSON.stringify(settings, null, 2)); } catch (e) { console.error("settings save failed", e); }
-}
+// ---- settings: numbers and toggles only. Never any image data. (All disk access: see storage.js.) ----
+let storage;
+function loadSettings() { settings = storage.loadSettings(DEFAULTS); }
+function saveSettings() { try { storage.saveSettings(settings); } catch (e) { console.error("settings save failed", e); } }
 
 // ---- privacy: block every request that isn't our own app:// content ----
 let blockedRequests = 0;   // outside connections the app tried to make (all blocked) — shown in the onboarding privacy step
@@ -295,6 +293,7 @@ ipcMain.on("overlay:preview", () => { setWarning(true); setTimeout(() => setWarn
 
 // ---- lifecycle ----
 app.whenReady().then(() => {
+  storage = createStorage(app.getPath("userData"));
   loadSettings();
   registerAppProtocol();
   lockDownNetwork(session.defaultSession);

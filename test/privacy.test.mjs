@@ -33,10 +33,18 @@ test("no remote URLs are loaded by any page", () => {
   assert.deepEqual(hits, []);
 });
 
-test("the only file the app writes is settings.json", () => {
-  const writes = files.filter(f => /writeFile(Sync)?\(/.test(read(f))).map(f => path.relative(src, f));
-  assert.deepEqual(writes, ["main/main.js"]);
-  assert.equal((read(path.join(src, "main/main.js")).match(/writeFile(Sync)?\(/g) || []).length, 1);
+test("all disk writes live in one module, and it only writes settings, posture history and a user-chosen export", () => {
+  const writers = files.filter(f => /writeFile(Sync)?\(|appendFile|createWriteStream|\.rename(Sync)?\(/.test(read(f))).map(f => path.relative(src, f));
+  assert.deepEqual(writers, ["main/storage.js"], "only storage.js may write to disk");
+  const names = [...read(path.join(src, "main/storage.js")).matchAll(/file\("([\w-]+\.\w+)"\)/g)].map(m => m[1]);
+  assert.deepEqual([...new Set(names)].sort(), ["history.json", "settings.json"]);
+});
+
+test("nothing outside storage.js can write: main.js and the renderer never touch fs for writing", () => {
+  for (const f of files) {
+    if (f.endsWith("main/storage.js")) continue;
+    assert.doesNotMatch(read(f), /fs\.(write|append|rm|unlink|mkdir|copy|rename|createWriteStream)/, `${path.relative(src, f)} writes to disk`);
+  }
 });
 
 test("CSP forbids outside connections", () => {
