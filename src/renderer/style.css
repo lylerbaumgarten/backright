@@ -158,3 +158,20 @@ button.link { border:0; background:none; padding:0; color:var(--ok); font-weight
 select { font:inherit; padding:4px 8px; border-radius:8px; border:1px solid var(--line); background:var(--card); color:var(--fg); }
 select:disabled { opacity:.5; }
 label.inline select { margin:0 4px; }
+
+/* ---- Progress tab ---- */
+.stats { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin:10px 0 4px; }
+.stats > div { background:var(--bg); border:1px solid var(--line); border-radius:10px; padding:10px 12px; }
+.stats b { display:block; font-size:24px; font-variant-numeric:tabular-nums; line-height:1.2; }
+.stats span { color:var(--muted); font-size:13px; }
+.verdict { font-size:16px; font-weight:600; margin:8px 0 12px; }
+.verdict.better { color:var(--ok); } .verdict.worse { color:var(--warn); }
+.trend-rows { display:grid; gap:8px; margin:6px 0 8px; }
+.trow { display:grid; grid-template-columns:130px 70px 1fr; align-items:baseline; gap:10px; padding:8px 0; border-top:1px solid var(--line); }
+.trow span { color:var(--muted); } .trow b { font-size:20px; font-variant-numeric:tabular-nums; } .trow small { color:var(--muted); }
+.trow.up small { color:var(--ok); font-weight:600; } .trow.down small { color:var(--warn); font-weight:600; }
+.chart { width:100%; height:auto; display:block; margin-top:6px; }
+.c-grid { stroke:var(--line); stroke-width:1; } .c-axis { fill:var(--muted); font:11px system-ui,sans-serif; }
+.c-bar.good { fill:var(--ok); } .c-bar.fair { fill:var(--warn); } .c-bar.poor { fill:var(--bad); }
+.c-bar.thin { fill:var(--muted); opacity:.5; } .c-bar.empty { fill:var(--line); }
+@media (max-width:560px) { .stats { grid-template-columns:repeat(2,1fr); } .trow { grid-template-columns:1fr; gap:2px; } }

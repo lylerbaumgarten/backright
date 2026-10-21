@@ -19,6 +19,7 @@
   <div class="tabwrap">
     <nav class="tabs" id="tabs">
       <button data-tab="monitor" class="on">Monitor</button>
+      <button data-tab="progress">Progress</button>
       <button data-tab="setup" id="tabSetup">Desk setup</button>
       <button data-tab="privacy">Privacy</button>
     </nav>
@@ -89,6 +90,8 @@
     </div>
   </section>
 
+  <section id="tab-progress" hidden></section>
+
   <section id="tab-setup" hidden>
     <div class="card">
       <h2 id="setupTitle">Desk setup</h2>
@@ -117,7 +120,7 @@
       <ul>
         <li><b>Everything runs on this computer.</b> The pose model ships inside the app. No account, no server.</li>
         <li><b>Works with no internet.</b> The app blocks every network request and its security policy forbids connections outside itself — turn off Wi-Fi with the preview on and watch it keep tracking you.</li>
-        <li><b>No pictures or video are stored.</b> Each camera frame is analysed in memory and thrown away. Only a handful of numbers (head height, shoulder width, tilt) are kept, in memory. The only thing saved to disk is a small settings file with your preferences and calibration numbers.</li>
+        <li><b>No pictures or video are stored.</b> Each camera frame is analysed in memory and thrown away. Only a handful of numbers (head height, shoulder width, tilt) are kept, in memory. Two small files are saved to disk: your settings (preferences and calibration numbers) and your posture history — daily totals such as minutes monitored, minutes slipping and how many breaks you took. Numbers only; you can export or delete the history any time from the Progress tab.</li>
         <li><b>The camera is only on when needed</b> — while monitoring, calibrating or running the live setup check. Pause monitoring and the camera light goes off.</li>
         <li><b>Verify it:</b> the app is open source; <code>npm test</code> and the README explain how to confirm there is no network or storage code path for images.</li>
       </ul>

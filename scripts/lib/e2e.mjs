@@ -1,11 +1,12 @@
 // Tiny end-to-end harness: launches the real app on a throwaway profile with test hooks on, and lets a script
 // drive and inspect it over DevTools. macOS only. Used by scripts/e2e.mjs.
 import { execFileSync, spawn, spawnSync } from "node:child_process";
-import { mkdtempSync, writeFileSync, rmSync, openSync, readFileSync } from "node:fs";
+import { mkdtempSync, writeFileSync, rmSync, readFileSync, existsSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { root, APP_NAME } from "./bundle.mjs";
 
+export { existsSync, readFileSync };
 export const sleep = ms => new Promise(r => setTimeout(r, ms));
 const DEFAULT_SETTINGS = { onboarded: true, baselines: { sit: { neck: 0.7, size: 0.42, tilt: 0, v: 2 }, stand: null }, setupDone: { sit: true, stand: false } };
 
@@ -45,11 +46,13 @@ function countFor(js) {
   return parseInt(m[1], 10);
 }
 
-export async function launch({ settings = {}, history = null, port = 9370 } = {}) {
+export async function launch({ settings = {}, history = null, port = 9370, reuseProfile = null } = {}) {
   execFileSync("node", [path.join(root, "scripts/dev-app.mjs"), "--no-launch"], { stdio: "ignore" });
-  const profile = mkdtempSync(path.join(os.tmpdir(), "backright-e2e-"));
-  writeFileSync(path.join(profile, "settings.json"), JSON.stringify({ ...DEFAULT_SETTINGS, ...settings }));
-  if (history) writeFileSync(path.join(profile, "history.json"), JSON.stringify(history));
+  const profile = reuseProfile ?? mkdtempSync(path.join(os.tmpdir(), "backright-e2e-"));   // reuseProfile: restart the app on the same data
+  if (!reuseProfile) {
+    writeFileSync(path.join(profile, "settings.json"), JSON.stringify({ ...DEFAULT_SETTINGS, ...settings }));
+    if (history) writeFileSync(path.join(profile, "history.json"), JSON.stringify(history));
+  }
   // Launch the way a user does (through macOS, `open`), not by executing the binary directly: a directly-executed
   // app isn't a proper foreground GUI app, and window hide/show then behaves differently — which would make the
   // overlay checks below lie.
@@ -70,9 +73,14 @@ export async function launch({ settings = {}, history = null, port = 9370 } = {}
     profile, panel, sleep, log: () => readFileSync(logFile, "utf8"),
     /** DevTools handle for the first window whose URL ends with `suffix` (e.g. "pill.html"). */
     async page(suffix) { const t = (await targets()).find(t => t.url.includes(suffix)); if (!t) throw new Error(`no window ${suffix}`); return connect(t); },
-    stop() { try { panel.close(); } catch {} child.kill(); rmSync(profile, { recursive: true, force: true }); },
+    /** Quit the app, wait for its helper processes to let go of the profile folder, then (unless asked not to) delete it. */
+    async stop({ keepProfile = false } = {}) {
+      try { panel.close(); } catch {}
+      child.kill(); await sleep(1200);
+      if (!keepProfile) try { rmSync(profile, { recursive: true, force: true, maxRetries: 10, retryDelay: 300 }); } catch { /* temp folder; the OS will tidy it */ }
+    },
   };
-  process.on("exit", () => { child.kill(); rmSync(profile, { recursive: true, force: true }); });
+  process.on("exit", () => { child.kill(); if (!reuseProfile) try { rmSync(profile, { recursive: true, force: true, maxRetries: 3 }); } catch {} });
   return app;
 }
 

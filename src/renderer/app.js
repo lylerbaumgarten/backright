@@ -5,6 +5,8 @@ import { art } from "./guide-art.js";
 import { createWizard } from "./onboarding.js";
 import { createMoveCard } from "./move.js";
 import { createBreakScheduler } from "./breaks.js";
+import * as H from "./history.js";
+import { createProgress } from "./progress.js";
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -12,6 +14,7 @@ const video = $("video"), canvas = $("overlay"), stage = $("stage");
 const camera = createCamera(video);
 const monitor = createMonitor();
 const breaks = createBreakScheduler();
+let recorder = H.createRecorder();            // posture history (numbers only); replaced at boot with what's on disk
 let breakShowing = false, lastBreakTry = 0;   // is the "time to move" pill up? / when we last asked main to show it
 
 let settings, idle = false, previewOn = false, modelReady = false;
@@ -94,7 +97,7 @@ function handle(lm) {
   const m = lm && measure(lm);
   if (!m) {   // nobody in frame: don't leave a stale nudge on screen
     monitor.reset(); window.posture.setWarning(false);
-    tickBreaks(now, false, false);
+    recordSample(now, false, false);
     setStatus("Can't see you — check your framing"); return;
   }
   // Smooth over ~1.5s of real time regardless of how often we sample.
@@ -104,18 +107,26 @@ function handle(lm) {
   $("mLean").textContent = (r.smooth.lean * 100).toFixed(0) + "%";
   $("mTilt").textContent = r.smooth.tilt.toFixed(1) + "°";
   window.posture.setWarning(r.warned);
-  tickBreaks(now, true, r.warned);
+  recordSample(now, true, r.warned);
   setStatus(r.warned ? "Posture slipping" : r.bad ? "Drifting…" : "Good posture", r.warned ? "bad" : r.bad ? "" : "ok");
 }
 
 // ---------- movement breaks ----------
 /** Once per sample while monitoring: count desk time, and show the reminder when it's due (and nothing more urgent is up). */
-let simNow = null;                                   // debug hook only: a simulated clock
+let simNow = null, simEpoch = null;                  // debug hook only: simulated clocks
 const clockNow = () => simNow ?? performance.now();
+const epochNow = () => simEpoch ?? Date.now();     // wall-clock time, for which calendar day a sample belongs to
+
+/** Everything that happens once per sample while monitoring. */
+function recordSample(now, present, warned) {
+  tickBreaks(now, present, warned);
+  recorder.record(epochNow(), { present, warned, mode: settings.mode, sensitivity: settings.sensitivity });
+}
 function tickBreaks(now, present, postureWarned) {
   const cfg = settings.breaks || {};
   if (!cfg.enabled) { if (breakShowing) dismissBreak(); return; }
   const r = breaks.tick(now, { present, monitoring: true, blocked: postureWarned });
+  for (const ev of r.events) if (ev === "away-break") recorder.addBreak(epochNow(), settings.mode);   // stepping away 5+ min counts
   if (r.dueNow && !breakShowing && now - lastBreakTry > 10000) {      // main refuses while snoozed; retry every 10 s
     lastBreakTry = now;
     window.posture.showBreak().then(shown => { if (shown) breakShowing = true; });
@@ -124,6 +135,21 @@ function tickBreaks(now, present, postureWarned) {
 function dismissBreak() { breakShowing = false; window.posture.hideBreak(); }
 /** The user answered the pill (or finished a routine). */
 function answerBreak(kind) { breakShowing = false; breaks.acknowledge(clockNow(), kind); }
+
+// ---------- history: save + the Progress tab ----------
+async function saveHistory() {
+  if (!recorder.isDirty()) return;
+  if (await window.posture.setHistory(recorder.data())) recorder.markSaved();
+}
+setInterval(saveHistory, 30000);                         // main also asks us to save when the app quits
+window.posture.onFlush(() => saveHistory());
+
+const progress = createProgress($("tab-progress"), {
+  data: () => recorder.data(), now: epochNow,
+  exportCsv: () => window.posture.exportHistory(H.toCSV(recorder.data())),
+  clear: async () => { await window.posture.clearHistory(); recorder = H.createRecorder(H.emptyHistory()); },
+});
+setInterval(() => { if (tab === "progress") progress.render(); }, 5000);   // live numbers while you're looking at them
 
 // ---------- calibration ----------
 function finishCalib(ok) { const cb = calibCb; calibCb = null; cb?.(ok); }
@@ -221,7 +247,8 @@ function render() {
   const inWizard = tab === "onboard";
   document.querySelectorAll("#modeSeg button").forEach(b => b.classList.toggle("on", b.dataset.mode === settings.mode));
   document.querySelectorAll("#tabs button").forEach(b => b.classList.toggle("on", !inWizard && b.dataset.tab === tab));
-  for (const t of ["onboard", "monitor", "setup", "privacy"]) $("tab-" + t).hidden = t !== tab;
+  for (const t of ["onboard", "monitor", "progress", "setup", "privacy"]) $("tab-" + t).hidden = t !== tab;
+  if (tab === "progress") progress.render();
   if (!inWizard) placeStage(null);                   // never leave the preview parked inside a hidden section
   $("tabs").classList.toggle("locked", inWizard);   // can't wander off mid-walkthrough; "Close" is the exit
   $("modeSeg").hidden = inWizard;
@@ -259,7 +286,7 @@ const moveWhere = () => settings.moveWhere || (settings.mode === "stand" ? "stan
 const move = createMoveCard($("moveCard"), {
   where: moveWhere,
   setWhere: w => save({ moveWhere: w }),
-  onBreak: () => answerBreak("taken"),                  // a finished routine resets the reminder clock
+  onBreak: () => { recorder.addBreak(epochNow(), settings.mode); answerBreak("taken"); },   // a finished routine is a break, and resets the reminder clock
 });
 
 // ---------- walkthrough ----------
@@ -306,7 +333,7 @@ document.querySelectorAll("#tabs button").forEach(b => b.onclick = () => {
 async function toggleMonitoring() {
   const on = !settings.monitoring;
   monitor.reset(); window.posture.setWarning(false); if (breakShowing) dismissBreak();
-  if (on) hideTabHint(); else previewOn = false;
+  if (on) hideTabHint(); else { previewOn = false; saveHistory(); }
   await save({ monitoring: on });
   if (on && !baseline()) startCalibration();
 }
@@ -356,9 +383,10 @@ window.posture.onStartBreak(() => { if (tab !== "onboard") { tab = "monitor"; re
 if (window.posture.isDebug) {
   window.__backright = {
     sample(present, warned = false, count = 1, stepMs = 1000) {
-      simNow ??= performance.now();
-      for (let i = 0; i < count; i++) { simNow += stepMs; tickBreaks(simNow, present, warned); window.posture.setWarning(!!warned); }
+      simNow ??= performance.now(); simEpoch ??= Date.now();
+      for (let i = 0; i < count; i++) { simNow += stepMs; simEpoch += stepMs; recordSample(simNow, present, warned); window.posture.setWarning(!!warned); }
     },
+    history: () => recorder.data(), saveHistory,
     state: () => ({ breakShowing, ...breaks.snapshot(), simNow }),
     overlays: () => window.posture.debugOverlays(),   // Electron's own view of which overlay windows are visible
   };
@@ -366,6 +394,7 @@ if (window.posture.isDebug) {
 
 // ---------- boot ----------
 settings = await window.posture.getSettings();
+recorder = H.createRecorder(H.prune(H.sanitize(await window.posture.getHistory()), H.dateKey(Date.now())));
 if (!settings.onboarded) { tab = "onboard"; wizard.start(); }
 render();
 syncCamera(); // resumes monitoring if it was on last time and a baseline exists

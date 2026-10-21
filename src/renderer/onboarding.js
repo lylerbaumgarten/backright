@@ -100,7 +100,7 @@ export function createWizard(root, api) {
         <p class="lead">BackRight watches your head and shoulders through the webcam. Here's exactly what happens to the video:</p>
         <ul class="promises">
           <li><span class="tick">✓</span><div><b>Analysed here, never uploaded.</b> A small pose model runs inside this app. There's no account and no server.</div></li>
-          <li><span class="tick">✓</span><div><b>Never saved.</b> Each frame is checked in memory, then thrown away. Only a few numbers (like head height) are kept for a moment.</div></li>
+          <li><span class="tick">✓</span><div><b>Never saved.</b> Each frame is checked in memory, then thrown away. All that's kept are numbers — like how long you sat well today — so you can see your progress.</div></li>
           <li><span class="tick">✓</span><div><b>Works with no internet.</b> The app blocks every outside connection — don't take our word for it, try it:</div></li>
         </ul>
         <div class="card inner privacy-test">

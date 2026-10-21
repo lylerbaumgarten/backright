@@ -16,6 +16,11 @@ contextBridge.exposeInMainWorld("posture", {
   previewOverlay: () => ipcRenderer.send("overlay:preview"),
   pillAction: action => ipcRenderer.send("pill:action", action),
   debugOverlays: () => ipcRenderer.invoke("debug:overlays"),   // only answers in debug mode
+  getHistory: () => ipcRenderer.invoke("history:get"),
+  setHistory: data => ipcRenderer.invoke("history:set", data),
+  clearHistory: () => ipcRenderer.invoke("history:clear"),
+  exportHistory: csv => ipcRenderer.invoke("history:export", csv),
+  onFlush: fn => on("cmd:flush", fn),
   showBreak: () => ipcRenderer.invoke("break:show"),            // true if the reminder pill was shown
   hideBreak: () => ipcRenderer.send("break:hide"),
   onBreakAction: fn => { const offs = ["show", "snooze", "skip"].map(a => on(`cmd:break-${a}`, () => fn(a))); return () => offs.forEach(f => f()); },

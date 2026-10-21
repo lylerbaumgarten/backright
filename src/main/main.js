@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Tray, Menu, screen, ipcMain, session, protocol, powerMonitor, nativeImage, systemPreferences, shell } = require("electron");
+const { app, BrowserWindow, Tray, Menu, screen, ipcMain, session, protocol, powerMonitor, nativeImage, systemPreferences, shell, dialog } = require("electron");
 const path = require("node:path");
 const { BASELINE_VERSION, trayState, trayText, ICON, DOCK } = require("./tray-state");
 const fs = require("node:fs");
@@ -311,6 +311,18 @@ ipcMain.handle("settings:set", (_e, patch) => {
   return settings;
 });
 ipcMain.handle("privacy:stats", () => ({ blocked: blockedRequests }));
+
+// ---- posture history (numbers only — see storage.js and src/renderer/history.js) ----
+ipcMain.handle("history:get", () => storage.loadHistory());
+ipcMain.handle("history:set", (_e, data) => { try { storage.saveHistory(data); return true; } catch (e) { console.error("history save failed:", e.message); return false; } });
+ipcMain.handle("history:clear", () => { storage.clearHistory(); return true; });
+ipcMain.handle("history:export", async (_e, csv) => {
+  // The one place the app writes outside its own data folder — and only where you tell it to.
+  const res = await dialog.showSaveDialog(panel, { title: "Export posture history", defaultPath: path.join(app.getPath("documents"), "backright-history.csv"), filters: [{ name: "CSV", extensions: ["csv"] }] });
+  if (res.canceled || !res.filePath) return null;
+  storage.exportTo(res.filePath, csv);
+  return res.filePath;
+});
 ipcMain.handle("camera:request", async () => {
   if (process.platform !== "darwin") return "granted";
   const status = systemPreferences.getMediaAccessStatus("camera");   // granted | denied | restricted | not-determined
@@ -358,6 +370,11 @@ app.whenReady().then(() => {
   powerMonitor.on("resume", () => setIdle(false));
 });
 
-app.on("before-quit", () => { app.isQuitting = true; });
+// Ask the window to save its history before we go (it saves every 30 s anyway; this closes the last gap).
+let flushedOnQuit = false;
+app.on("before-quit", e => {
+  app.isQuitting = true;
+  if (!flushedOnQuit && panel && !panel.isDestroyed()) { flushedOnQuit = true; e.preventDefault(); sendToPanel("cmd:flush"); setTimeout(() => app.quit(), 600); }
+});
 app.on("window-all-closed", e => e.preventDefault()); // keep running in the tray
 app.on("activate", showPanel);
