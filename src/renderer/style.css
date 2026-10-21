@@ -95,6 +95,10 @@ button.ghost:hover { color:var(--fg); }
 .choice { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:8px 0; }
 .choice button { text-align:left; padding:14px; border-radius:12px; } .choice button b { display:block; font-size:16px; } .choice button small { color:var(--muted); }
 .choice button.on { border:2px solid var(--accent); padding:13px; }
+.choice label { color:var(--fg); font-size:inherit; display:flex; gap:12px; align-items:flex-start; cursor:pointer; padding:14px; border:1px solid var(--line); border-radius:12px; background:var(--card); }
+.choice label b { display:block; font-size:16px; } .choice label small { color:var(--muted); }
+.choice label input { margin-top:3px; width:18px; height:18px; accent-color:var(--accent); flex:none; }
+.choice label.on { border:2px solid var(--accent); padding:13px; }
 .notice.warn { margin-top:0; }
 .banner { margin-bottom:16px; }
 .guide-cards { display:grid; gap:18px; margin:12px 0; }

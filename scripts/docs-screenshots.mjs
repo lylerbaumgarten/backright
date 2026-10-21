@@ -76,12 +76,12 @@ await click(".guide-nav button[data-sub='3']"); await shot("07-guide-screen");
 await click(".guide-nav button[data-sub='4']"); await shot("08-guide-check");
 
 // ---------- 2. standing guide ----------
-await setSettings({ mode: "stand" }); await reload();
+await setSettings({ mode: "stand", modes: ["stand"] }); await reload();
 await click("[data-act=next]"); await click("[data-act=privacyNext]"); await click("[data-act=openGuide]");
 await click(".guide-nav button[data-sub='3']"); await shot("09-guide-standing-spine");
 
 // ---------- 3. the everyday app: calibrated, onboarding finished ----------
-await setSettings({ mode: "sit", onboarded: true, baselines: { sit: { neck: 0.7, size: 0.42, tilt: 0, v: 2 }, stand: null }, setupDone: { sit: true, stand: false } });
+await setSettings({ mode: "sit", modes: ["sit", "stand"], onboarded: true, baselines: { sit: { neck: 0.7, size: 0.42, tilt: 0, v: 2 }, stand: null }, setupDone: { sit: true, stand: false } });
 await reload();
 await shot("10-monitor", { maxHeight: 1500 });
 await shot("10b-move-card", { selector: "#moveCard" });

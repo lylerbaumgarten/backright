@@ -23,7 +23,7 @@ BackRight isn't notarized (that needs a paid Apple developer account), so macOS 
 
 <table>
   <tr>
-    <td width="50%"><img src="docs/screenshots/01-welcome.png" alt="Welcome: pick sitting or standing"><br><sub><b>1.</b> Welcome — sitting or standing, each calibrated separately</sub></td>
+    <td width="50%"><img src="docs/screenshots/01-welcome.png" alt="Welcome: pick sitting or standing"><br><sub><b>1.</b> Welcome — sitting, standing or both, each calibrated separately</sub></td>
     <td width="50%"><img src="docs/screenshots/02-camera-privacy.png" alt="Camera privacy step with the turn-off-Wi-Fi test"><br><sub><b>2.</b> Camera &amp; privacy — what happens to the video, and a Wi-Fi-off test you can run yourself</sub></td>
   </tr>
   <tr>
@@ -94,7 +94,7 @@ Hover it for a tooltip with the same in words; the menu's top line says it too.
 
 ## How to use it
 
-1. **Welcome** — pick Sitting or Standing (each has its own calibration).
+1. **Welcome** — tick Sitting, Standing or both (a sit-stand desk). Each gets its own calibration, and the rest of setup follows your choice: one mode means one calibration and no Sitting / Standing switch; both means you calibrate each, then switch between them. Change it any time in Monitor → Settings → How you work.
 2. **Camera & privacy** — what happens to the video, with a live preview you can test with Wi-Fi off.
 3. **Calibrate** — hold the posture you want to keep for a few seconds. That's your baseline. Not sure your desk is set up well? Open the **Desk setup guide** from this screen: an illustrated sub-page (overview, one page per step, and a camera check) that returns you to calibration.
 4. **Start monitoring.** If you drift from the baseline (head dropping toward your shoulders, leaning toward the screen, shoulders uneven) for a few seconds, a soft glow appears around every screen. It fades when you correct.

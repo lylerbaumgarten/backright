@@ -1,11 +1,12 @@
 import { GUIDE, CHECK_LABELS } from "./guide.js";
 import { art } from "./guide-art.js";
+import { withMode } from "./modes.js";
 
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const modeWord = m => (m === "sit" ? "sitting" : "standing");
 
 /**
- * First-run walkthrough: Welcome → Camera & privacy → Calibrate → Done.
+ * First-run walkthrough: Welcome (sitting / standing / both) → Camera & privacy → Calibrate (once per chosen mode) → Done.
  * The illustrated desk-setup guide is an optional sub-page, opened from the Calibrate step ("Desk setup guide"),
  * so the main path stays short but the detail is one click away. It can also be opened straight from the Desk setup
  * tab / the reminder banner (start({ fromGuide: true })). `api` is the small slice of app.js this needs.
@@ -13,16 +14,24 @@ const modeWord = m => (m === "sit" ? "sitting" : "standing");
  * `sub` is null on the main path, otherwise which guide page is showing: -1 overview, 0..n-1 the steps, n the check page.
  */
 export function createWizard(root, api) {
-  const STEPS = ["welcome", "privacy", "calibrate", "done"];
+  // the steps depend on what was chosen on the welcome screen: one Calibrate step for each of sitting / standing
+  const stepIds = () => ["welcome", "privacy", ...api.enabledModes().map(m => "calibrate:" + m), "done"];
+  const calibMode = id => (id.startsWith("calibrate:") ? id.slice(10) : null);
   let step = 0, sub = null, calibrating = false, pvTimer = null, pvLastFrames = 0, pvTick = null;
   const ticked = new Set();
 
   const guide = () => GUIDE[api.settings().mode];
-  const go = n => { step = Math.max(0, Math.min(STEPS.length - 1, n)); sub = null; render(); root.scrollIntoView?.({ block: "start" }); };
-  const goStep = id => go(STEPS.indexOf(id));
+  const go = async n => {
+    const ids = stepIds(); step = Math.max(0, Math.min(ids.length - 1, n)); sub = null;
+    const m = calibMode(ids[step]);
+    if (m && api.settings().mode !== m) await api.setMode(m);   // this step calibrates (and shows the guide for) this mode
+    render(); root.scrollIntoView?.({ block: "start" });
+  };
+  const goStep = id => go(stepIds().indexOf(id));
+  const firstCalibrate = () => go(2);
 
   function phase() {
-    const p = { welcome: 1, privacy: 1, calibrate: 2, done: 3 }[STEPS[step]];
+    const id = stepIds()[step], p = id === "welcome" || id === "privacy" ? 1 : id === "done" ? 3 : 2;
     const label = (n, t) => `<li class="${p === n ? "on" : p > n ? "past" : ""}"><span>${p > n ? "✓" : n}</span>${t}</li>`;
     return `<ol class="phases">${label(1, "Camera")}${label(2, "Calibrate")}${label(3, "Start")}</ol>`;
   }
@@ -73,7 +82,7 @@ export function createWizard(root, api) {
 
   // ---------- main path ----------
   function render() {
-    const s = api.settings(), mode = s.mode, g = guide(), id = STEPS[step];
+    const s = api.settings(), mode = s.mode, g = guide(), id = stepIds()[step], modes = id === "welcome" ? api.welcomeModes() : api.enabledModes();
     clearInterval(pvTimer); api.placeStage(null);   // rescue the preview element before innerHTML replaces the card
     let html = "";
 
@@ -83,12 +92,14 @@ export function createWizard(root, api) {
       html = `${top()}
         <h2>Let's get you set up</h2>
         <p class="lead">About two minutes: first how your camera is used (spoiler: it never leaves this Mac), then calibrate so BackRight learns what <i>your</i> good posture looks like. There's also an illustrated desk-setup guide if you want to tune your desk first.</p>
-        <p class="hint">Do you mostly sit or stand?</p>
+        <p class="hint">How do you work? Tick everything that applies.</p>
         <div class="choice" role="group">
-          <button data-mode="sit" class="${mode === "sit" ? "on" : ""}"><b>Sitting</b><small>Desk and chair</small></button>
-          <button data-mode="stand" class="${mode === "stand" ? "on" : ""}"><b>Standing</b><small>Sit-stand desk, raised</small></button>
+          <label class="${modes.includes("sit") ? "on" : ""}"><input type="checkbox" data-modechk="sit" ${modes.includes("sit") ? "checked" : ""}><span><b>Sitting</b><small>Desk and chair</small></span></label>
+          <label class="${modes.includes("stand") ? "on" : ""}"><input type="checkbox" data-modechk="stand" ${modes.includes("stand") ? "checked" : ""}><span><b>Standing</b><small>Sit-stand desk, raised</small></span></label>
         </div>
-        <p class="hint">Have a sit-stand desk? Do this once for each — switch with the Sitting / Standing control afterwards.</p>
+        <p class="hint">${modes.length > 1
+          ? "Both: you'll calibrate each once, then switch with the Sitting / Standing control at the top right (or from the menu-bar icon)."
+          : `Only ${modeWord(modes[0])}: setup and the rest of the app are just for ${modeWord(modes[0])}. You can change this any time in Monitor → Settings.`}</p>
         <div class="row wiz-nav"><span class="spacer"></span><button class="primary" data-act="next">Continue →</button></div>`;
     }
 
@@ -126,8 +137,9 @@ export function createWizard(root, api) {
         </div>`;
     }
 
-    else if (id === "calibrate") {
+    else if (calibMode(id)) {
       const standing = mode === "stand", done = s.setupDone[mode], fail = api.notice();
+      const nth = modes.indexOf(mode) + 1;
       const setupCard = done
         ? `<div class="notice"><b>✓ Desk set up.</b> <button class="link" data-act="openGuide">Review the guide</button></div>`
         : `<div class="card inner setup-card">
@@ -139,7 +151,8 @@ export function createWizard(root, api) {
              <button data-act="openGuide">Desk setup guide →</button>
            </div>`;
       html = `${top()}
-        <h2>Calibrate your alignment</h2>
+        ${modes.length > 1 ? `<p class="eyebrow">${modeWord(mode)} · ${nth} of ${modes.length}</p>` : ""}
+        <h2>Calibrate your ${modes.length > 1 ? modeWord(mode) + " " : ""}alignment</h2>
         ${setupCard}
         <p class="lead">${standing ? "Stand" : "Sit"} the way you want to hold — tall, relaxed, looking at the screen, with your head and shoulders in the camera's view.</p>
         <ul class="points">
@@ -152,16 +165,16 @@ export function createWizard(root, api) {
         <div class="row wiz-nav">
           <button data-act="back">← Back</button>
           <span class="spacer"></span>
-          <button class="ghost" data-act="later">Do this later</button>
+          <button class="ghost" data-act="later">${nth < modes.length ? `Skip ${modeWord(mode)}` : "Do this later"}</button>
           <button class="primary" data-act="calibrate" ${calibrating ? "disabled" : ""}>${calibrating ? "Calibrating…" : "Start calibration"}</button>
         </div>`;
     }
 
     else { // done
-      const calibrated = !!s.baselines[mode], setup = s.setupDone[mode];
+      const calibrated = !!s.baselines[mode], setup = s.setupDone[mode], missing = modes.filter(m => !s.baselines[m]);
       html = `${top()}
         <h2>${calibrated ? "You're all set" : "Setup finished"}</h2>
-        <p class="lead">${calibrated ? "Monitoring will nudge you with a soft glow around the screen when your posture slips." : "You haven't calibrated yet — do it from the Monitor tab when you're ready."}</p>
+        <p class="lead">${calibrated ? "Monitoring will nudge you with a soft glow around the screen when your posture slips." : "You haven't calibrated yet — do it from the Monitor tab when you're ready."}${calibrated && missing.length ? ` ${missing.map(modeWord).map(w => w[0].toUpperCase() + w.slice(1)).join(" and ")} isn't calibrated yet — switch to it at the top right and press Calibrate when you're at that desk height.` : ""}</p>
         <p class="hint">Where to find things later:</p>
         <ul class="points">
           <li><b>Desk setup tab</b> — the illustrated guide${setup ? "" : ", which you haven't gone through yet"}, and the camera check</li>
@@ -169,7 +182,7 @@ export function createWizard(root, api) {
           <li><b>Progress tab</b> — how often you slip and whether it's getting better, day by day</li>
           <li><b>Movement breaks</b> — after 30 minutes at your desk BackRight suggests a quick stretch (change it or turn it off in Monitor → Settings)</li>
           <li><b>Menu-bar and Dock icons</b> — status at a glance; pause or snooze from the menu-bar icon</li>
-          <li><b>Sit-stand desk?</b> Switch to the other mode at the top right and set it up too</li>
+          ${modes.length > 1 ? `<li><b>Sitting / Standing switch</b> — top right of this window and in the menu-bar menu; each is calibrated separately</li>` : ""}
         </ul>
         <div class="row wiz-nav"><span class="spacer"></span><button data-act="finish">Finish</button>${calibrated ? `<button class="primary" data-act="finishStart">Start monitoring</button>` : ""}</div>`;
     }
@@ -200,8 +213,6 @@ export function createWizard(root, api) {
   const openGuide = at => { sub = at; render(); root.scrollIntoView?.({ block: "start" }); };
 
   root.addEventListener("click", async e => {
-    const modeBtn = e.target.closest("[data-mode]");
-    if (modeBtn) { await api.setMode(modeBtn.dataset.mode); render(); return; }
     const pageBtn = e.target.closest("[data-sub]");
     if (pageBtn) { if (api.live() && +pageBtn.dataset.sub !== guide().steps.length) api.setLive(false); sub = +pageBtn.dataset.sub; render(); return; }
     if (e.target.id === "wizLive" || e.target.id === "pvPreview") { api.toggleLive(); render(); return; }
@@ -209,9 +220,9 @@ export function createWizard(root, api) {
     if (!act) return;
     const n = guide().steps.length;
     switch (act) {
-      case "next": go(step + 1); break;
+      case "next": await api.setModes(api.welcomeModes()); go(step + 1); break;   // make the (possibly preselected) choice official
       case "back": api.setLive(false); go(step - 1); break;
-      case "privacyNext": api.setLive(false); goStep("calibrate"); break;
+      case "privacyNext": api.setLive(false); firstCalibrate(); break;
       case "openGuide": openGuide(-1); break;
       case "guideNext": sub = Math.min(sub + 1, n); render(); break;
       case "guidePrev": sub = Math.max(sub - 1, -1); render(); break;
@@ -219,16 +230,18 @@ export function createWizard(root, api) {
       case "setupDone": api.setLive(false); await api.markSetupDone(); sub = null; render(); break;
       case "calibrate":
         calibrating = true; render();
-        api.calibrate(ok => { calibrating = false; ok ? goStep("done") : render(); });
+        api.calibrate(ok => { calibrating = false; ok ? go(step + 1) : render(); });
         break;
-      case "later": goStep("done"); break;
+      case "later": go(step + 1); break;
       case "camSettings": api.openCameraSettings(); break;
       case "relaunch": api.relaunch(); break;
       case "close": case "finish": await close(false); break;
       case "finishStart": await close(true); break;
     }
   });
-  root.addEventListener("change", e => {
+  root.addEventListener("change", async e => {
+    const m = e.target.dataset?.modechk;
+    if (m) { await api.setModes(withMode(api.welcomeModes(), m, e.target.checked)); render(); return; }   // can't untick the last one
     const t = e.target.dataset?.tick; if (t === undefined) return;
     e.target.checked ? ticked.add(+t) : ticked.delete(+t);
   });
@@ -241,7 +254,7 @@ export function createWizard(root, api) {
 
   return {
     /** fromGuide: open straight into the desk-setup guide (replay from the Desk setup tab / reminder banner). */
-    start({ fromGuide = false } = {}) { calibrating = false; ticked.clear(); step = fromGuide ? STEPS.indexOf("calibrate") : 0; sub = fromGuide ? -1 : null; render(); },
+    start({ fromGuide = false } = {}) { calibrating = false; ticked.clear(); step = fromGuide ? Math.max(2, stepIds().indexOf("calibrate:" + api.settings().mode)) : 0; sub = fromGuide ? -1 : null; render(); },
     refresh() { render(); },
   };
 }

@@ -7,6 +7,7 @@ import { createMoveCard } from "./move.js";
 import { createBreakScheduler } from "./breaks.js";
 import * as H from "./history.js";
 import { createProgress } from "./progress.js";
+import { enabledModes, withMode, currentMode } from "./modes.js";
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -260,7 +261,9 @@ function render() {
   renderTodayLine();
   if (!inWizard) placeStage(null);                   // never leave the preview parked inside a hidden section
   $("tabs").classList.toggle("locked", inWizard);   // can't wander off mid-walkthrough; "Close" is the exit
-  $("modeSeg").hidden = inWizard;
+  $("modeSeg").hidden = inWizard || enabledModes(settings).length < 2;   // nothing to switch between if you only use one
+  const modes = enabledModes(settings);
+  $("modeSit").checked = modes.includes("sit"); $("modeStand").checked = modes.includes("stand");
 
   const mode = settings.mode;
   const needsSetup = settings.onboarded && !settings.monitoring && !settings.setupDone[mode] && !settings.setupBannerDismissed[mode];
@@ -310,6 +313,9 @@ const wizard = createWizard($("tab-onboard"), {
   privacyStats: () => window.posture.privacyStats(),
   placeStage,
   setMode: async m => { if (m !== settings.mode) { monitor.reset(); window.posture.setWarning(false); await save({ mode: m }); } },
+  enabledModes: () => enabledModes(settings),
+  welcomeModes: () => (settings.modes ? enabledModes(settings) : ["sit"]),   // first run: Sitting preselected
+  setModes: modes => applyModes(modes),
   markSetupDone: () => save({ setupDone: { ...settings.setupDone, [settings.mode]: true } }),
   calibrate: cb => startCalibration(cb),
   hintDeskSetup: on => on ? showTabHint("Skipped for now — the desk setup guide lives here", { persist: true }) : hideTabHint(),
@@ -323,6 +329,15 @@ const wizard = createWizard($("tab-onboard"), {
     else if (skippedSetup || !settings.setupDone[settings.mode]) showTabHint("You can do the desk setup any time from here");
   },
 });
+
+// Choose which of sitting / standing this person uses. If the one in use is switched off, move to the other.
+async function applyModes(modes) {
+  const patch = { modes };
+  if (!modes.includes(settings.mode)) { patch.mode = modes[0]; monitor.reset(); window.posture.setWarning(false); }
+  await save(patch);
+}
+for (const [id, mode] of [["modeSit", "sit"], ["modeStand", "stand"]])
+  $(id).onchange = e => applyModes(withMode(enabledModes(settings), mode, e.target.checked));   // render() resets the box if that was the last one
 
 function openWizard(opts) { tab = "onboard"; notice = ""; wizard.start(opts); render(); }
 
@@ -396,13 +411,14 @@ if (window.posture.isDebug) {
       for (let i = 0; i < count; i++) { simNow += stepMs; simEpoch += stepMs; recordSample(simNow, present, warned); window.posture.setWarning(!!warned); }
     },
     history: () => recorder.data(), saveHistory,
-    state: () => ({ breakShowing, ...breaks.snapshot(), simNow }),
+    state: () => ({ breakShowing, mode: settings.mode, ...breaks.snapshot(), simNow }),
     overlays: () => window.posture.debugOverlays(),   // Electron's own view of which overlay windows are visible
   };
 }
 
 // ---------- boot ----------
 settings = await window.posture.getSettings();
+if (settings.mode !== currentMode(settings)) settings = await window.posture.setSettings({ mode: currentMode(settings) });
 recorder = H.createRecorder(H.prune(H.sanitize(await window.posture.getHistory()), H.dateKey(Date.now())));
 if (!settings.onboarded) { tab = "onboard"; wizard.start(); }
 render();

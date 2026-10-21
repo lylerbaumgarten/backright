@@ -24,7 +24,8 @@ const CSP = [
 ].join("; ");
 
 const DEFAULTS = {
-  mode: "sit",                 // "sit" | "stand"
+  mode: "sit",                 // "sit" | "stand" — the one in use right now
+  modes: null,                 // which of them this person works in: ["sit"], ["stand"] or both; null = not chosen yet = both
   baselines: { sit: null, stand: null },
   setupDone: { sit: false, stand: false },
   onboarded: false,            // first-run walkthrough finished or closed
@@ -291,14 +292,17 @@ function rebuildTray() {
     { type: "separator" },
     { label: "Take a movement break…", click: () => openPanelAnd("cmd:start-break") },
     { type: "separator" },
-    { label: "Sitting", type: "radio", checked: settings.mode === "sit", click: () => setMode("sit") },
-    { label: "Standing", type: "radio", checked: settings.mode === "stand", click: () => setMode("stand") },
-    { type: "separator" },
+    ...(enabledModes().length > 1 ? [
+      { label: "Sitting", type: "radio", checked: settings.mode === "sit", click: () => setMode("sit") },
+      { label: "Standing", type: "radio", checked: settings.mode === "stand", click: () => setMode("stand") },
+      { type: "separator" },
+    ] : []),
     { label: "Open BackRight…", click: showPanel },
     { label: "Quit", click: () => { app.isQuitting = true; app.quit(); } },
   ]));
 }
 
+function enabledModes() { const m = ["sit", "stand"].filter(x => Array.isArray(settings.modes) && settings.modes.includes(x)); return m.length ? m : ["sit", "stand"]; }
 function setMode(mode) { settings.mode = mode; saveSettings(); rebuildTray(); sendToPanel("settings:changed", settings); }
 function sendToPanel(ch, payload) { if (panel && !panel.isDestroyed()) panel.webContents.send(ch, payload); }
 
