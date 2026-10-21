@@ -41,8 +41,7 @@ const DEFAULTS = {
 
 let settings = { ...DEFAULTS };
 let panel, tray;
-const overlays = new Map(); // displayId -> { sig, wins: BrowserWindow[] } (edge strips)
-let warning = false;
+const overlays = new Map(); // displayId -> { sig, strips: BrowserWindow[], pill: BrowserWindow }
 
 // ---- settings: numbers and toggles only. Never any image data. (All disk access: see storage.js.) ----
 let storage;
@@ -99,6 +98,16 @@ function stripsFor(b) {
   ].map(r => ({ ...r, sw: w, sh: h }));
 }
 
+/**
+ * What's on screen. Two independent groups of windows per display:
+ *   strips — the soft glow, only while a posture nudge is active;
+ *   pill   — a small bar with buttons, for a posture nudge OR a "time to move" reminder (posture wins if both).
+ */
+let warning = false, breakReminder = false;
+const visible = { strips: false, pill: false };
+const hideTimers = {};
+const pillKind = () => (warning ? "posture" : breakReminder ? "break" : null);
+
 function overlayStrip(r) {
   const win = new BrowserWindow({
     x: r.x, y: r.y, width: r.width, height: r.height, transparent: true, frame: false, hasShadow: false, resizable: false, movable: false,
@@ -110,11 +119,11 @@ function overlayStrip(r) {
   win.setIgnoreMouseEvents(true, { forward: true });
   win.setContentProtection(true);   // keep it out of screenshots / screen recordings / screen shares (macOS + Windows)
   win.loadURL(`app://local/overlay.html?sw=${r.sw}&sh=${r.sh}&ox=${r.ox}&oy=${r.oy}&pill=${r.pill}`);
-  win.webContents.once("did-finish-load", () => { pushOverlayState(win); if (warning) win.showInactive(); });
+  win.webContents.once("did-finish-load", () => { pushOverlayState(win); if (visible.strips) win.showInactive(); });
   return win;
 }
 
-// The reminder pill is its own small window so it can have buttons (the glow strips stay click-through).
+// The pill is its own small window so it can have buttons (the glow strips stay click-through).
 // focusable:false → clicking it never steals focus from whatever you're working in.
 const PILL_W = 500, PILL_H = 48;
 function overlayPill(b) {
@@ -127,20 +136,24 @@ function overlayPill(b) {
   win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
   win.setContentProtection(true);
   win.loadURL("app://local/pill.html");
-  win.webContents.once("did-finish-load", () => { pushOverlayState(win); if (warning) win.showInactive(); });
+  win.webContents.once("did-finish-load", () => { pushOverlayState(win); if (visible.pill) win.showInactive(); });
   return win;
 }
 
-const allOverlayWins = () => [...overlays.values()].flatMap(o => o.wins).filter(w => !w.isDestroyed());
+const live = w => !w.isDestroyed();
+const stripWins = () => [...overlays.values()].flatMap(o => o.strips).filter(live);
+const pillWins = () => [...overlays.values()].map(o => o.pill).filter(live);
+const allOverlayWins = () => [...stripWins(), ...pillWins()];
 
 function syncOverlays() {
-  const displays = screen.getAllDisplays(), live = new Set(displays.map(d => d.id));
-  for (const [id, o] of overlays) if (!live.has(id)) { o.wins.forEach(w => !w.isDestroyed() && w.destroy()); overlays.delete(id); }
+  const displays = screen.getAllDisplays(), liveIds = new Set(displays.map(d => d.id));
+  const destroy = o => [...o.strips, o.pill].forEach(w => live(w) && w.destroy());
+  for (const [id, o] of overlays) if (!liveIds.has(id)) { destroy(o); overlays.delete(id); }
   for (const d of displays) {
     const sig = JSON.stringify(d.bounds), existing = overlays.get(d.id);
     if (existing?.sig === sig) continue;
-    existing?.wins.forEach(w => !w.isDestroyed() && w.destroy());
-    overlays.set(d.id, { sig, wins: [...stripsFor(d.bounds).map(overlayStrip), overlayPill(d.bounds)] });
+    if (existing) destroy(existing);
+    overlays.set(d.id, { sig, strips: stripsFor(d.bounds).map(overlayStrip), pill: overlayPill(d.bounds) });
   }
   // setVisibleOnAllWorkspaces(…, { visibleOnFullScreen: true }) quietly turns a macOS app into a menu-bar-only
   // "accessory" and removes its Dock icon. We want the Dock icon (it's how you reopen a closed window), so restore it.
@@ -148,31 +161,47 @@ function syncOverlays() {
 }
 
 function pushOverlayState(win) {
-  if (!win.isDestroyed()) win.webContents.send("overlay:state", { warning, glow: settings.glow, pill: settings.pill });
+  if (!win.isDestroyed()) win.webContents.send("overlay:state", { warning, kind: pillKind(), glow: settings.glow, pill: settings.pill });
 }
 const pushAllOverlays = () => allOverlayWins().forEach(pushOverlayState);
 
-// Overlay windows are only on screen while a nudge is showing; the rest of the time they're hidden.
-let hideTimer = null, snoozeUntil = 0, snoozeTimer = null;
+/** Show/hide each group to match the state. Turning on: show, then (a beat later) tell the page so the fade plays. Turning off: fade, then hide. */
+function refreshOverlays() {
+  const want = { strips: warning, pill: warning || breakReminder }, groups = { strips: stripWins, pill: pillWins };
+  for (const key of ["strips", "pill"]) {
+    if (want[key] && !visible[key]) {
+      clearTimeout(hideTimers[key]); visible[key] = true;
+      groups[key]().forEach(w => w.showInactive());
+      setTimeout(pushAllOverlays, 30);                   // let the window paint its hidden state first so the fade plays
+    } else if (!want[key] && visible[key]) {
+      visible[key] = false;
+      pushAllOverlays();                                 // fade out…
+      hideTimers[key] = setTimeout(() => { if (!visible[key]) groups[key]().forEach(w => w.hide()); }, 2200);   // …then hide
+    } else pushAllOverlays();                            // same windows, maybe a different message
+  }
+}
+
+// Overlay windows are only on screen while there is something to show.
+let snoozeUntil = 0, snoozeTimer = null;
+const snoozed = () => Date.now() < snoozeUntil;
 function setWarning(on) {
-  if (on && Date.now() < snoozeUntil) on = false;      // snoozed
+  if (on && snoozed()) on = false;
   if (warning === on) return;
   warning = on;
   updateTray();
-  clearTimeout(hideTimer);
-  if (on) {
-    allOverlayWins().forEach(w => w.showInactive());
-    setTimeout(pushAllOverlays, 30);                    // let the window paint hidden-state first so the fade plays
-  } else {
-    pushAllOverlays();                                  // fade out…
-    hideTimer = setTimeout(() => allOverlayWins().forEach(w => { if (!warning) w.hide(); }), 2200);   // …then hide
-  }
+  refreshOverlays();
+}
+/** A "time to move" reminder. Refused (false) while nudges/reminders are snoozed or breaks are switched off. */
+function setBreak(on) {
+  if (on && (snoozed() || !settings.breaks?.enabled)) return false;
+  if (breakReminder !== on) { breakReminder = on; refreshOverlays(); }
+  return true;
 }
 
 function snooze(minutes) {
   clearTimeout(snoozeTimer);
   snoozeUntil = minutes ? Date.now() + minutes * 60000 : 0;
-  setWarning(false);
+  setWarning(false); setBreak(false);
   if (minutes) snoozeTimer = setTimeout(() => { snoozeUntil = 0; rebuildTray(); }, minutes * 60000);
   rebuildTray();
 }
@@ -181,7 +210,8 @@ function snooze(minutes) {
 function createPanel() {
   panel = new BrowserWindow({
     width: 760, height: 820, show: false, title: "BackRight", backgroundColor: "#f6f5f2",
-    webPreferences: { preload: path.join(__dirname, "preload.js"), contextIsolation: true, sandbox: true, backgroundThrottling: false },
+    webPreferences: { preload: path.join(__dirname, "preload.js"), contextIsolation: true, sandbox: true, backgroundThrottling: false,
+                      additionalArguments: process.env.BACKRIGHT_DEBUG ? ["--backright-debug"] : [] },
   });
   // BACKRIGHT_DEBUG=1: print the window's console messages (model load time, GPU/CPU delegate, errors) to the terminal.
   if (process.env.BACKRIGHT_DEBUG) panel.webContents.on("console-message", (e, ...old) => console.log("[renderer]", e.message ?? old[1]));
@@ -195,15 +225,17 @@ const showPanel = () => {
   panel.show(); panel.focus();
   if (process.platform === "darwin") app.focus({ steal: true });   // we're a menu-bar app; make sure it comes to the front
 };
-function openSettings() {
+/** Bring the window forward and then tell it to do something (waits for a rebuilt window to finish loading). */
+function openPanelAnd(channel) {
   const rebuilt = !panel || panel.isDestroyed();
   showPanel();
-  if (rebuilt) panel.webContents.once("did-finish-load", () => setTimeout(() => sendToPanel("cmd:show-settings"), 800));
-  else sendToPanel("cmd:show-settings");
+  if (rebuilt) panel.webContents.once("did-finish-load", () => setTimeout(() => sendToPanel(channel), 800));
+  else sendToPanel(channel);
 }
+const openSettings = () => openPanelAnd("cmd:show-settings");
 function pauseMonitoring() {
   settings.monitoring = false; saveSettings(); rebuildTray();
-  setWarning(false);
+  setWarning(false); setBreak(false);
   sendToPanel("settings:changed", settings);   // the panel stops the camera and updates its buttons
 }
 
@@ -255,7 +287,9 @@ function rebuildTray() {
     { type: "separator" },
     snoozeUntil > Date.now()
       ? { label: `Resume nudges (snoozed until ${snoozeLabel()})`, click: () => snooze(0) }
-      : { label: "Snooze nudges", submenu: [5, 30, 60].map(m => ({ label: m === 60 ? "1 hour" : `${m} minutes`, click: () => snooze(m) })) },
+      : { label: "Snooze nudges & reminders", submenu: [5, 30, 60].map(m => ({ label: m === 60 ? "1 hour" : `${m} minutes`, click: () => snooze(m) })) },
+    { type: "separator" },
+    { label: "Take a movement break…", click: () => openPanelAnd("cmd:start-break") },
     { type: "separator" },
     { label: "Sitting", type: "radio", checked: settings.mode === "sit", click: () => setMode("sit") },
     { label: "Standing", type: "radio", checked: settings.mode === "stand", click: () => setMode("stand") },
@@ -289,7 +323,15 @@ ipcMain.on("camera:open-settings", () => {
 });
 ipcMain.on("app:relaunch", () => { app.isQuitting = true; app.relaunch(); app.quit(); });
 ipcMain.on("posture:warning", (_e, on) => setWarning(!!on));
-ipcMain.on("pill:action", (_e, action) => { if (action === "pause") pauseMonitoring(); else if (action === "settings") openSettings(); });
+ipcMain.on("pill:action", (_e, action) => {
+  if (action === "pause") pauseMonitoring();
+  else if (action === "settings") openSettings();
+  else if (action === "break-show") { setBreak(false); openPanelAnd("cmd:break-show"); }                      // open the window and start a routine
+  else if (action === "break-snooze" || action === "break-skip") { setBreak(false); sendToPanel("cmd:break-" + action.slice(6)); }
+});
+ipcMain.handle("break:show", () => setBreak(true));
+if (process.env.BACKRIGHT_DEBUG) ipcMain.handle("debug:overlays", () => ({ strips: stripWins().map(w => w.isVisible()), pill: pillWins().map(w => w.isVisible()), state: { warning, breakReminder, ...visible } }));
+ipcMain.on("break:hide", () => setBreak(false));
 ipcMain.on("overlay:preview", () => { setWarning(true); setTimeout(() => setWarning(false), 3500); });
 
 // ---- lifecycle ----
@@ -309,7 +351,7 @@ app.whenReady().then(() => {
   for (const ev of ["display-added", "display-removed", "display-metrics-changed"]) screen.on(ev, syncOverlays);
 
   // No point watching an empty chair: stop sampling while the screen is locked / asleep.
-  const setIdle = v => { idle = v; updateTray(); rebuildTray(); sendToPanel("system:idle", v); };
+  const setIdle = v => { idle = v; if (v) setBreak(false); updateTray(); rebuildTray(); sendToPanel("system:idle", v); };
   powerMonitor.on("lock-screen", () => setIdle(true));
   powerMonitor.on("suspend", () => setIdle(true));
   powerMonitor.on("unlock-screen", () => setIdle(false));

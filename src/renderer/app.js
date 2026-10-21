@@ -4,12 +4,15 @@ import { GUIDE, CHECK_LABELS } from "./guide.js";
 import { art } from "./guide-art.js";
 import { createWizard } from "./onboarding.js";
 import { createMoveCard } from "./move.js";
+import { createBreakScheduler } from "./breaks.js";
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const video = $("video"), canvas = $("overlay"), stage = $("stage");
 const camera = createCamera(video);
 const monitor = createMonitor();
+const breaks = createBreakScheduler();
+let breakShowing = false, lastBreakTry = 0;   // is the "time to move" pill up? / when we last asked main to show it
 
 let settings, idle = false, previewOn = false, modelReady = false;
 let calib = null, calibCb = null;   // calib: { phase: "countdown"|"sample", until, samples: [] }
@@ -91,6 +94,7 @@ function handle(lm) {
   const m = lm && measure(lm);
   if (!m) {   // nobody in frame: don't leave a stale nudge on screen
     monitor.reset(); window.posture.setWarning(false);
+    tickBreaks(now, false, false);
     setStatus("Can't see you — check your framing"); return;
   }
   // Smooth over ~1.5s of real time regardless of how often we sample.
@@ -100,8 +104,26 @@ function handle(lm) {
   $("mLean").textContent = (r.smooth.lean * 100).toFixed(0) + "%";
   $("mTilt").textContent = r.smooth.tilt.toFixed(1) + "°";
   window.posture.setWarning(r.warned);
+  tickBreaks(now, true, r.warned);
   setStatus(r.warned ? "Posture slipping" : r.bad ? "Drifting…" : "Good posture", r.warned ? "bad" : r.bad ? "" : "ok");
 }
+
+// ---------- movement breaks ----------
+/** Once per sample while monitoring: count desk time, and show the reminder when it's due (and nothing more urgent is up). */
+let simNow = null;                                   // debug hook only: a simulated clock
+const clockNow = () => simNow ?? performance.now();
+function tickBreaks(now, present, postureWarned) {
+  const cfg = settings.breaks || {};
+  if (!cfg.enabled) { if (breakShowing) dismissBreak(); return; }
+  const r = breaks.tick(now, { present, monitoring: true, blocked: postureWarned });
+  if (r.dueNow && !breakShowing && now - lastBreakTry > 10000) {      // main refuses while snoozed; retry every 10 s
+    lastBreakTry = now;
+    window.posture.showBreak().then(shown => { if (shown) breakShowing = true; });
+  }
+}
+function dismissBreak() { breakShowing = false; window.posture.hideBreak(); }
+/** The user answered the pill (or finished a routine). */
+function answerBreak(kind) { breakShowing = false; breaks.acknowledge(clockNow(), kind); }
 
 // ---------- calibration ----------
 function finishCalib(ok) { const cb = calibCb; calibCb = null; cb?.(ok); }
@@ -222,6 +244,8 @@ function render() {
   $("delay").value = settings.delaySec; $("delayVal").textContent = settings.delaySec + "s";
   $("every").value = settings.checkEverySec; $("everyVal").textContent = (+settings.checkEverySec).toFixed(1) + "s";
   $("glowOn").checked = settings.glow; $("pillOn").checked = settings.pill;
+  $("breakOn").checked = settings.breaks.enabled; $("breakEvery").value = String(settings.breaks.intervalMin); $("breakEvery").disabled = !settings.breaks.enabled;
+  breaks.configure({ intervalMin: settings.breaks.intervalMin });
 
   if (!calib && !wantMonitoring()) {
     setStatus(settings.monitoring && !baseline() ? `Calibrate for ${modeName(mode)} to begin` : idle ? "Paused — screen locked" : "Not monitoring");
@@ -235,7 +259,7 @@ const moveWhere = () => settings.moveWhere || (settings.mode === "stand" ? "stan
 const move = createMoveCard($("moveCard"), {
   where: moveWhere,
   setWhere: w => save({ moveWhere: w }),
-  onBreak: info => console.log("[break]", info.source, info.seconds),   // wired to history + the reminder timer below
+  onBreak: () => answerBreak("taken"),                  // a finished routine resets the reminder clock
 });
 
 // ---------- walkthrough ----------
@@ -281,7 +305,7 @@ document.querySelectorAll("#tabs button").forEach(b => b.onclick = () => {
 
 async function toggleMonitoring() {
   const on = !settings.monitoring;
-  monitor.reset(); window.posture.setWarning(false);
+  monitor.reset(); window.posture.setWarning(false); if (breakShowing) dismissBreak();
   if (on) hideTabHint(); else previewOn = false;
   await save({ monitoring: on });
   if (on && !baseline()) startCalibration();
@@ -297,6 +321,8 @@ $("delay").oninput = e => save({ delaySec: +e.target.value });
 $("every").oninput = e => save({ checkEverySec: +e.target.value });
 $("glowOn").onchange = e => save({ glow: e.target.checked });
 $("pillOn").onchange = e => save({ pill: e.target.checked });
+$("breakOn").onchange = e => { if (!e.target.checked) dismissBreak(); save({ breaks: { ...settings.breaks, enabled: e.target.checked } }); };
+$("breakEvery").onchange = e => save({ breaks: { ...settings.breaks, intervalMin: +e.target.value } });
 
 $("bannerGo").onclick = () => openWizard({ fromGuide: true });
 $("bannerLater").onclick = async () => {
@@ -317,7 +343,26 @@ window.posture.onToggleMonitoring(toggleMonitoring);
 window.posture.onShowSettings(() => {   // from the nudge pill: land on the Monitor tab's settings (unless mid-walkthrough)
   if (tab !== "onboard") { tab = "monitor"; render(); $("settingsCard").scrollIntoView({ behavior: "smooth", block: "start" }); }
 });
-window.posture.onIdle(v => { idle = v; monitor.reset(); window.posture.setWarning(false); render(); syncCamera(); });
+window.posture.onIdle(v => { idle = v; monitor.reset(); window.posture.setWarning(false); breakShowing = false; render(); syncCamera(); });
+// Buttons on the "time to move" pill, and the tray's "Take a movement break…"
+window.posture.onBreakAction(a => {
+  if (a === "show") { answerBreak("taken"); if (tab !== "onboard") { tab = "monitor"; render(); } move.start(); }
+  else answerBreak(a === "snooze" ? "snoozed" : "skipped");
+});
+window.posture.onStartBreak(() => { if (tab !== "onboard") { tab = "monitor"; render(); } move.start(); });
+
+// ---------- test hook (only when launched with BACKRIGHT_DEBUG=1) ----------
+// Feeds simulated samples through the same code a camera frame reaches, so timing features can be tested without a person.
+if (window.posture.isDebug) {
+  window.__backright = {
+    sample(present, warned = false, count = 1, stepMs = 1000) {
+      simNow ??= performance.now();
+      for (let i = 0; i < count; i++) { simNow += stepMs; tickBreaks(simNow, present, warned); window.posture.setWarning(!!warned); }
+    },
+    state: () => ({ breakShowing, ...breaks.snapshot(), simNow }),
+    overlays: () => window.posture.debugOverlays(),   // Electron's own view of which overlay windows are visible
+  };
+}
 
 // ---------- boot ----------
 settings = await window.posture.getSettings();

@@ -15,13 +15,25 @@
            background:rgba(26,18,0,.12); color:#1a1200; }
   button:hover { background:rgba(26,18,0,.24); }
   button.primary { background:#1a1200; color:#fbe9cc; } button.primary:hover { background:#000; }
+  /* a calm green for "time to move", so it never reads as a posture warning */
+  #pill.break { background:rgba(150,208,176,.97); color:#0c2a1a; }
+  #pill.break button { background:rgba(12,42,26,.12); color:#0c2a1a; } #pill.break button:hover { background:rgba(12,42,26,.24); }
+  #pill.break button.primary { background:#0c2a1a; color:#e4f6ec; } #pill.break button.primary:hover { background:#000; }
+  .group { display:flex; gap:8px; } .group[hidden] { display:none; }
 </style>
 </head>
 <body>
 <div id="pill">
-  <span class="msg">Sit tall — head back, shoulders down</span>
-  <button id="pause" title="Stop monitoring (camera off)">Pause</button>
-  <button id="settings" class="primary" title="Open BackRight settings">Settings</button>
+  <span class="msg" id="msg">Sit tall — head back, shoulders down</span>
+  <div class="group" id="postureBtns">
+    <button id="pause" title="Stop monitoring (camera off)">Pause</button>
+    <button id="settings" class="primary" title="Open BackRight settings">Settings</button>
+  </div>
+  <div class="group" id="breakBtns" hidden>
+    <button id="breakShow" class="primary" title="Open a short stretch routine">Show me</button>
+    <button id="breakSnooze" title="Ask again in 10 minutes">Snooze 10 min</button>
+    <button id="breakSkip" title="Skip this one">Skip</button>
+  </div>
 </div>
 <script type="module" src="pill.js"></script>
 </body>

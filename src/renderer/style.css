@@ -152,3 +152,9 @@ button.link { border:0; background:none; padding:0; color:var(--ok); font-weight
 .rt-bar { height:6px; border-radius:3px; background:var(--line); overflow:hidden; margin-bottom:12px; }
 .rt-bar i { display:block; height:100%; background:var(--ok); transition:width .25s linear; }
 .routine-done { text-align:left; }
+
+/* ---- movement-break settings ---- */
+.subhead { font-size:14px; margin:18px 0 4px; padding-top:14px; border-top:1px solid var(--line); }
+select { font:inherit; padding:4px 8px; border-radius:8px; border:1px solid var(--line); background:var(--card); color:var(--fg); }
+select:disabled { opacity:.5; }
+label.inline select { margin:0 4px; }
