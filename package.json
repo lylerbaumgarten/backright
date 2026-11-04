@@ -14,6 +14,7 @@
     "icon": "node scripts/make-icon.mjs",
     "docs:screenshots": "node scripts/docs-screenshots.mjs",
     "release:mac": "node scripts/release-mac.mjs",
+    "release:cask": "node scripts/update-cask.mjs",
     "smoke": "node scripts/smoke.mjs",
     "e2e": "node scripts/e2e.mjs"
   },

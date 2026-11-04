@@ -17,6 +17,16 @@ Not sure which? Apple menu → **About This Mac**: *Chip: Apple M…* = Apple Si
 
 BackRight isn't notarized (that needs a paid Apple developer account), so macOS blocks the first launch: open the app, click **Done**, then **System Settings → Privacy & Security → Open Anyway**. Step-by-step instructions are inside the disk image and in the [release notes](https://github.com/lylerbaumgarten/backright/releases/tag/v0.2.0). Prefer not to trust a download? Everything is open source — build it yourself below.
 
+**Already use Homebrew?** There's a tap too:
+
+```bash
+brew tap lylerbaumgarten/tap
+brew trust lylerbaumgarten/tap      # Homebrew 7 asks you to trust third-party taps explicitly
+brew install --cask backright
+```
+
+Homebrew checks the download's SHA-256, and the cask then clears macOS's "downloaded from the internet" flag, so you skip the *Open Anyway* step. That removes a macOS safety prompt on your behalf — [details here](https://github.com/lylerbaumgarten/homebrew-tap#what-this-cask-does-to-gatekeeper-please-read). If you'd rather keep the prompt, use the DMG.
+
 > **Not a medical device.** BackRight is an ergonomics reminder, not medical advice. If you have pain, see a professional.
 
 ## Screenshots
