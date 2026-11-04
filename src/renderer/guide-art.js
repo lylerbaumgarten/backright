@@ -185,3 +185,6 @@ export function art(mode, key) {
   if (mode === "stand") return STAND_OVER[key] ? stand(STAND_GOOD, STAND_OVER[key]()) : "";
   return SIT_OVER[key] ? sit(SIT_GOOD, SIT_OVER[key]()) : "";
 }
+
+// Shared with stretch-art.js so the stretch illustrations match the guide's look.
+export { wrap, limb, shoe, torso, joint, hot, guide, arc, pill, f1, pt, sitSetting, standSetting, SIT_GOOD, STAND_GOOD };

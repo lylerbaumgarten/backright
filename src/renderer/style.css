@@ -64,6 +64,13 @@ input[type=range] { width:100%; }
 .a-pill { fill:var(--card); stroke-width:1.6; } .a-ok { stroke:var(--ok); } .a-bad { stroke:var(--bad); }
 .a-leader { stroke-width:1.6; fill:none; } .a-okf { fill:var(--ok); stroke:none; } .a-badf { fill:var(--bad); stroke:none; }
 .a-ptext { fill:var(--fg); font:600 12px system-ui,-apple-system,"Segoe UI",sans-serif; }
+/* stretch illustrations (stretch-art.js) */
+.a-move { stroke:var(--art-accent); stroke-width:3.5; stroke-linecap:round; fill:none; } .a-movef { fill:var(--art-accent); stroke:none; }
+.a-ghost { fill:none; stroke:var(--art-far); stroke-width:2.5; stroke-dasharray:5 5; }
+.a-wall { fill:var(--art-desk); opacity:.55; } .a-furnline { stroke:var(--art-furn); stroke-width:2; }
+.a-window { fill:var(--art-screen); opacity:.35; stroke:var(--art-furn); stroke-width:3; } .a-gaze { stroke:var(--ok); stroke-width:2.2; stroke-dasharray:7 6; }
+.a-hand { fill:var(--art-arm); stroke:var(--art-arm); stroke-width:3; stroke-linejoin:round; } .ahf { fill:var(--art-far); }
+.a-glass { fill:var(--art-eye); stroke:var(--art-far); stroke-width:3; stroke-linejoin:round; opacity:.9; } .a-water { fill:var(--art-screen); opacity:.8; }
 .a-capbar.a-badbar { fill:var(--bad); opacity:.14; } .a-capbar.a-goodbar { fill:var(--ok); opacity:.16; }
 .a-cap { font:700 20px system-ui,-apple-system,"Segoe UI",sans-serif; } .a-badt { fill:var(--bad); } .a-goodt { fill:var(--ok); }
 
@@ -144,6 +151,9 @@ button.link { border:0; background:none; padding:0; color:var(--ok); font-weight
 .stretch-list .smeta { color:var(--muted); font-size:13px; white-space:nowrap; }
 .stretch-list ol, .rt-steps { margin:2px 0 6px 1.6em; padding-left:1em; font-size:14px; }
 .stretch-list ol li, .rt-steps li { margin-bottom:4px; }
+.s-art svg { display:block; width:100%; max-width:400px; height:auto; margin:8px auto 10px; }
+.s-art { background:var(--bg); border-radius:12px; padding:4px; margin:8px 0 6px 1.6em; }
+.routine > .s-art { margin-left:0; }
 .cue { color:var(--muted); font-size:13px; margin:4px 0 4px 1.6em; }
 .rt-steps + .cue, .routine > .cue { margin-left:0; }
 .caution { font-size:13px; color:var(--warn); margin:4px 0 8px 1.6em; }
