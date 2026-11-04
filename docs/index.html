@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BackRight — a gentle posture nudge for your Mac</title>
+<meta name="description" content="BackRight watches your posture through your webcam and nudges you with a soft glow when you slip. Free, open source, and nothing is recorded or sent anywhere.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="BackRight — a gentle posture nudge for your Mac">
+<meta property="og:description" content="A soft glow when your posture slips. Analysed on your Mac, never saved or sent. Free and open source.">
+<meta property="og:image" content="https://lylerbaumgarten.github.io/backright/screenshots/14-nudge-illustration.png">
+<meta property="og:url" content="https://lylerbaumgarten.github.io/backright/">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="icon.png">
+<style>
+  :root {
+    --bg:#f6f5f2; --fg:#1f2421; --muted:#5f6862; --card:#ffffff; --line:#e3e1db; --accent:#1f2421; --on-accent:#ffffff;
+    --green:#3f8f5f; --green-soft:#e4f3e8; --amber:#d98a1c; --shadow:0 12px 40px rgba(31,36,33,.10);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg:#161917; --fg:#e8ebe8; --muted:#9aa39d; --card:#1f2421; --line:#2c332f; --accent:#e8ebe8; --on-accent:#161917;
+      --green:#5fbf86; --green-soft:#1d2b23; --amber:#f0a23a; --shadow:0 12px 40px rgba(0,0,0,.45);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg:#161917; --fg:#e8ebe8; --muted:#9aa39d; --card:#1f2421; --line:#2c332f; --accent:#e8ebe8; --on-accent:#161917;
+    --green:#5fbf86; --green-soft:#1d2b23; --amber:#f0a23a; --shadow:0 12px 40px rgba(0,0,0,.45);
+  }
+  * { box-sizing:border-box; }
+  html { scroll-behavior:smooth; }
+  body { margin:0; background:var(--bg); color:var(--fg); font:17px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif; -webkit-font-smoothing:antialiased; }
+  a { color:inherit; }
+  .wrap { max-width:1040px; margin:0 auto; padding:0 20px; }
+  header.top { display:flex; align-items:center; justify-content:space-between; padding:20px 0; }
+  .brand { display:flex; align-items:center; gap:10px; font-weight:700; font-size:19px; letter-spacing:-.01em; text-decoration:none; }
+  .brand img { width:30px; height:30px; border-radius:7px; }
+  nav a { margin-left:20px; color:var(--muted); text-decoration:none; font-size:15px; }
+  nav a:hover { color:var(--fg); }
+  .hero { padding:36px 0 24px; text-align:center; }
+  .eyebrow { display:inline-block; font-size:13px; font-weight:600; letter-spacing:.04em; text-transform:uppercase; color:var(--green); background:var(--green-soft); padding:5px 12px; border-radius:999px; }
+  h1 { font-size:clamp(34px, 6vw, 58px); line-height:1.08; letter-spacing:-.025em; margin:18px auto 16px; max-width:15em; }
+  .lead { font-size:clamp(18px, 2.4vw, 21px); color:var(--muted); max-width:36em; margin:0 auto 28px; }
+  .cta { display:flex; flex-wrap:wrap; gap:12px; justify-content:center; }
+  .btn { display:inline-flex; flex-direction:column; align-items:center; padding:13px 24px; border-radius:14px; background:var(--accent); color:var(--on-accent); text-decoration:none; font-weight:600; border:1px solid var(--accent); min-width:230px; transition:transform .15s; }
+  .btn:hover { transform:translateY(-1px); }
+  .btn small { font-weight:400; opacity:.75; font-size:13px; }
+  .btn.alt { background:transparent; color:var(--fg); border-color:var(--line); }
+  .note { font-size:14px; color:var(--muted); margin-top:16px; }
+  .note a { color:var(--fg); }
+  figure { margin:0; }
+  .shot { background:var(--card); border:1px solid var(--line); border-radius:16px; box-shadow:var(--shadow); overflow:hidden; }
+  .shot img { display:block; width:100%; height:auto; }
+  figcaption { font-size:14px; color:var(--muted); margin-top:10px; }
+  .hero figure { margin:40px auto 0; max-width:900px; }
+  section { padding:64px 0 8px; }
+  h2 { font-size:clamp(26px, 4vw, 36px); letter-spacing:-.02em; line-height:1.15; margin:0 0 12px; }
+  .sub { color:var(--muted); max-width:38em; margin:0 0 32px; }
+  .grid3 { display:grid; grid-template-columns:repeat(3, 1fr); gap:16px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:22px; }
+  .card h3 { margin:0 0 6px; font-size:19px; letter-spacing:-.01em; }
+  .card p { margin:0; color:var(--muted); font-size:16px; }
+  .step { width:30px; height:30px; border-radius:50%; background:var(--green-soft); color:var(--green); display:inline-flex; align-items:center; justify-content:center; font-weight:700; margin-bottom:12px; }
+  .gallery { display:grid; grid-template-columns:repeat(2, 1fr); gap:28px 24px; }
+  .gallery .shot { max-height:560px; overflow:hidden; }
+  .gallery .shot img { object-fit:cover; object-position:top; }
+  .gallery .wide { grid-column:1 / -1; }
+  .gallery .wide .shot { max-height:none; }
+  .privacy { background:var(--card); border:1px solid var(--line); border-radius:20px; padding:32px; margin-top:8px; }
+  .privacy ul { list-style:none; padding:0; margin:0; display:grid; gap:14px; }
+  .privacy li { display:flex; gap:14px; align-items:flex-start; }
+  .privacy .tick { flex:none; width:26px; height:26px; border-radius:50%; background:var(--green-soft); color:var(--green); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:14px; margin-top:2px; }
+  .privacy b { display:block; }
+  .privacy span { color:var(--muted); font-size:16px; }
+  .install { display:grid; grid-template-columns:1.2fr 1fr; gap:16px; align-items:start; }
+  ol.steps { margin:12px 0 0; padding-left:20px; color:var(--muted); font-size:16px; }
+  ol.steps li { margin:6px 0; }
+  ol.steps b, .card b { color:var(--fg); }
+  pre { background:var(--bg); border:1px solid var(--line); border-radius:12px; padding:14px 16px; overflow-x:auto; font:14px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; margin:12px 0; }
+  details { border-top:1px solid var(--line); padding:16px 0; }
+  details:last-of-type { border-bottom:1px solid var(--line); }
+  summary { cursor:pointer; font-weight:600; list-style:none; display:flex; justify-content:space-between; gap:16px; }
+  summary::after { content:"+"; color:var(--muted); font-weight:400; font-size:22px; line-height:1; }
+  details[open] summary::after { content:"–"; }
+  details p { color:var(--muted); margin:10px 0 0; font-size:16px; }
+  footer { margin-top:72px; padding:32px 0 56px; border-top:1px solid var(--line); color:var(--muted); font-size:14px; }
+  footer .links { display:flex; flex-wrap:wrap; gap:8px 22px; margin-bottom:12px; }
+  footer a { color:var(--fg); }
+  @media (max-width: 800px) {
+    .grid3, .gallery, .install { grid-template-columns:1fr; }
+    nav a:not(.keep) { display:none; }
+    .btn { min-width:0; width:100%; }
+    .cta { flex-direction:column; align-items:stretch; }
+    .privacy { padding:22px; }
+    section { padding-top:48px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <a class="brand" href="#"><img src="icon.png" alt="" width="30" height="30">BackRight</a>
+    <nav><a href="#how">How it works</a><a href="#privacy">Privacy</a><a href="#install">Install</a><a class="keep" href="https://github.com/lylerbaumgarten/backright">GitHub</a></nav>
+  </header>
+
+  <main>
+    <div class="hero">
+      <span class="eyebrow">Free · open source · for Mac</span>
+      <h1>A gentle nudge when your posture slips</h1>
+      <p class="lead">BackRight watches your posture through your webcam and tells you with a soft glow around your screen. Your video never leaves your Mac: it isn't saved or sent anywhere.</p>
+      <div class="cta">
+        <a class="btn" id="dl-arm" href="https://github.com/lylerbaumgarten/backright/releases/latest">Download for Apple Silicon<small>M1, M2, M3, M4 and later</small></a>
+        <a class="btn alt" id="dl-intel" href="https://github.com/lylerbaumgarten/backright/releases/latest">Download for Intel<small>Older Macs</small></a>
+      </div>
+      <p class="note"><span id="ver">Latest version</span> · macOS 13 or newer · Not sure which? Apple menu → <b>About This Mac</b>. · <a href="#install">Install steps</a></p>
+      <figure>
+        <div class="shot"><img src="screenshots/14-nudge-illustration.png" width="1100" height="660" alt="A soft amber glow around the screen edges and a small pill reading 'Sit tall — head back, shoulders down' with Pause and Settings buttons"></div>
+        <figcaption>The nudge: a faint glow around the screen and a small pill. Illustration using the app's real styling.</figcaption>
+      </figure>
+    </div>
+
+    <section id="how">
+      <h2>Calibrate once, then forget about it</h2>
+      <p class="sub">Nothing to learn and nothing that pops up in your way.</p>
+      <div class="grid3">
+        <div class="card"><div class="step">1</div><h3>Show it good posture</h3><p>Hold the way you want to sit or stand for a few seconds. That's your baseline. Works sitting, standing, or both, with a separate calibration for each, for sit-stand desks.</p></div>
+        <div class="card"><div class="step">2</div><h3>Work as normal</h3><p>If your head drops forward, you lean in, or your shoulders go uneven for a few seconds, a soft glow appears around every screen. It fades when you correct.</p></div>
+        <div class="card"><div class="step">3</div><h3>Move a little</h3><p>Every 30 minutes a quiet reminder offers a quick stretch, at your desk or standing up. Snooze or skip any time.</p></div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Everything in one small window</h2>
+      <p class="sub">A desk-setup guide, easy stretches, and a way to see whether things are getting better.</p>
+      <div class="gallery">
+        <figure>
+          <div class="shot"><img src="screenshots/04-guide-overview.png" width="760" height="890" loading="lazy" alt="Desk setup guide comparing a slouched pose with an upright, supported pose"></div>
+          <figcaption><b>Desk setup guide.</b> Screen height, chair, arms and a camera check, with pictures.</figcaption>
+        </figure>
+        <figure>
+          <div class="shot"><img src="screenshots/10c-progress-sample-data.png" width="760" height="1203" loading="lazy" alt="Progress tab with a better-than-last-week verdict and a daily chart"></div>
+          <figcaption><b>Progress.</b> Is it getting better? Time with good posture, slips per hour, daily chart. (Sample data shown.)</figcaption>
+        </figure>
+        <figure class="wide">
+          <div class="shot"><img src="screenshots/10b-move-card.png" width="720" height="370" loading="lazy" alt="Move card listing three easy stretches with a button to start a two-minute routine"></div>
+          <figcaption><b>Move.</b> Easy stretches at your desk or standing up, with a guided two-minute routine.</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section id="privacy">
+      <h2>Private by design</h2>
+      <p class="sub">A posture app that watches you through a camera should earn your trust. Here's how it does.</p>
+      <div class="privacy">
+        <ul>
+          <li><div class="tick">✓</div><div><b>Analysed on your Mac, never uploaded.</b><span>A small pose model runs inside the app. There's no account and no server.</span></div></li>
+          <li><div class="tick">✓</div><div><b>Never saved.</b><span>Each camera frame is checked in memory and thrown away. Only small numbers are kept, like how long you sat well today, so you can see your progress. You can export or delete them any time.</span></div></li>
+          <li><div class="tick">✓</div><div><b>Works with no internet.</b><span>The app blocks every outside connection. Don't take our word for it: the first-run walkthrough has a live counter you can watch while you turn Wi-Fi off.</span></div></li>
+          <li><div class="tick">✓</div><div><b>Open source, with tests.</b><span>All the code is public under the MIT licence, and automated tests fail if it ever starts saving images or using the network.</span></div></li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="install">
+      <h2>Get BackRight</h2>
+      <p class="sub">Free. macOS 13 or newer, Apple Silicon or Intel.</p>
+      <div class="install">
+        <div class="card">
+          <h3>Download</h3>
+          <p>Pick the right installer above (or on the <a href="https://github.com/lylerbaumgarten/backright/releases/latest">releases page</a>), then:</p>
+          <ol class="steps">
+            <li>Open the <b>.dmg</b> and drag <b>BackRight</b> to Applications.</li>
+            <li>Open BackRight. macOS says it can't verify the app: click <b>Done</b> (not "Move to Trash").</li>
+            <li>Go to <b>System Settings → Privacy &amp; Security</b>, scroll to <b>Security</b> and click <b>Open Anyway</b>. Enter your password.</li>
+            <li>Allow camera access when asked.</li>
+          </ol>
+          <p style="margin-top:14px">That warning appears because BackRight isn't signed with a paid Apple developer account yet. There's a text file with these steps inside the download.</p>
+        </div>
+        <div class="card">
+          <h3>Homebrew</h3>
+          <p>If you already use it:</p>
+<pre>brew tap lylerbaumgarten/tap
+brew trust lylerbaumgarten/tap
+brew install --cask backright</pre>
+          <p>Homebrew checks the download's checksum, then the cask clears macOS's download flag so you skip "Open Anyway". <a href="https://github.com/lylerbaumgarten/homebrew-tap#what-this-cask-does-to-gatekeeper-please-read">What that means</a>.</p>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Questions</h2>
+      <details><summary>Is it a medical device?</summary><p>No. BackRight is an ergonomics reminder, not medical advice. If you have pain, please see a professional.</p></details>
+      <details><summary>Does it slow my Mac down?</summary><p>It checks your posture a couple of times a second, not at full video rate. On a 2019 Intel MacBook Pro it used about 15–20% of one core while monitoring, and you can lower how often it checks in Settings.</p></details>
+      <details><summary>What does it need from my camera?</summary><p>A webcam that can see your head and shoulders, and reasonable lighting. It works best with one person in frame. It can't see your lower body, so knee and hip checks in the desk guide are best-effort.</p></details>
+      <details><summary>Windows or Linux?</summary><p>Not yet. The code is cross-platform, but only Mac builds are published and tested.</p></details>
+      <details><summary>What's stored on my computer?</summary><p>Your settings and calibration numbers, plus a small history of daily totals (minutes monitored, minutes slipping, slips, breaks). Numbers only, never images. You can export the history as CSV or delete it from the Progress tab.</p></details>
+    </section>
+  </main>
+
+  <footer>
+    <div class="links">
+      <a href="https://github.com/lylerbaumgarten/backright">Source code</a>
+      <a href="https://github.com/lylerbaumgarten/backright/releases">All releases</a>
+      <a href="https://github.com/lylerbaumgarten/backright/issues">Report a bug or suggest something</a>
+      <a href="https://github.com/lylerbaumgarten/backright/blob/main/LICENSE">MIT licence</a>
+    </div>
+    BackRight is free and open source, made by Lyle Baumgarten. It's an ergonomics reminder, not a medical device. Early release: feedback is very welcome.
+  </footer>
+</div>
+
+<script>
+  // Point the download buttons at the newest release's files; if GitHub's API isn't reachable the buttons keep going to the releases page.
+  fetch("https://api.github.com/repos/lylerbaumgarten/backright/releases/latest").then(r => r.ok ? r.json() : Promise.reject()).then(rel => {
+    const find = suffix => (rel.assets || []).find(a => a.name.endsWith(suffix));
+    const arm = find("-arm64.dmg"), intel = find("-x64.dmg");
+    if (arm) document.getElementById("dl-arm").href = arm.browser_download_url;
+    if (intel) document.getElementById("dl-intel").href = intel.browser_download_url;
+    if (rel.tag_name) document.getElementById("ver").textContent = "Version " + rel.tag_name.replace(/^v/, "");
+  }).catch(() => {});
+</script>
+</body>
+</html>
