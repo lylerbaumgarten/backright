@@ -2,8 +2,8 @@ import { suggest, buildRoutine, WHERE, DISCLAIMER, totalSeconds, minutesLabel } 
 import { createRoutine, countsAsBreak } from "./routine.js";
 import { stretchArt } from "./stretch-art.js";
 
-/** The illustration for a stretch (or nothing), described for screen readers. */
-const artHtml = s => { const svg = stretchArt(s.id); return svg ? `<div class="s-art" role="img" aria-label="Illustration: ${esc(s.name)}">${svg.replace("<svg ", "<svg aria-hidden=\"true\" ")}</div>` : ""; };
+/** The illustration for a stretch (or nothing). Decorative-but-described: the steps below carry the real instructions. */
+const artHtml = s => { const src = stretchArt(s.id); return src ? `<div class="s-art"><img src="${src}" alt="Illustration: ${esc(s.name)}" width="1024" height="765" decoding="async"></div>` : ""; };
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
 /**

@@ -15,17 +15,6 @@ test("every guide step has the fields the walkthrough and Desk setup tab render"
   }
 });
 
-test("every step has an illustration, and it's a well-formed self-contained SVG", () => {
-  for (const [mode, g] of Object.entries(GUIDE)) for (const s of [g.overview, ...g.steps]) {
-    const svg = art(mode, s.art);
-    assert.match(svg, /^<svg [^>]*viewBox=/, `${mode}/${s.art} should be an svg`);
-    assert.ok(svg.endsWith("</svg>"));
-    assert.equal((svg.match(/<g[ >]/g) || []).length, (svg.match(/<\/g>/g) || []).length, `${mode}/${s.art} unbalanced <g>`);
-    assert.ok(!/https?:|<script|<image|href=/i.test(svg.replace(/xmlns="[^"]*"/, "")), "no external references in illustrations");
-    assert.ok(/a-(joint|hot3|hlfill|dim)/.test(svg), `${mode}/${s.art} should highlight something`);
-  }
-});
-
 test("unknown illustration key returns empty string rather than throwing", () => {
   assert.equal(art("sit", "nope"), "");
 });

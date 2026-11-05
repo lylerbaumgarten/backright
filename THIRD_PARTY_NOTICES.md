@@ -22,3 +22,8 @@ Full license text: `LICENSES/Apache-2.0.txt`.
 
 The model card lists "any form of surveillance or identity recognition" as out of scope. BackRight runs entirely on your
 own computer, uses the model only to estimate your own head and shoulder position, and does not identify anyone.
+
+## Illustrations (`src/renderer/img/`)
+The stretch and desk-setup illustrations are original artwork generated with Google Gemini from the prompts in
+`docs/illustrations/gemini-style-guide.md`, then resized and converted to WebP. They are part of BackRight and are
+released under the project's MIT licence; no third-party stock artwork is included.
