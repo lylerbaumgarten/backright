@@ -1,6 +1,9 @@
 import { suggest, buildRoutine, WHERE, DISCLAIMER, totalSeconds, minutesLabel } from "./stretches.js";
 import { createRoutine, countsAsBreak } from "./routine.js";
+import { stretchArt } from "./stretch-art.js";
 
+/** The illustration for a stretch (or nothing). Decorative-but-described: the steps below carry the real instructions. */
+const artHtml = s => { const src = stretchArt(s.id); return src ? `<div class="s-art"><img src="${src}" alt="Illustration: ${esc(s.name)}" width="1024" height="765" decoding="async"></div>` : ""; };
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
 /**
@@ -18,6 +21,7 @@ export function createMoveCard(root, api) {
   function stretchRow(s) {
     return `<li><details>
       <summary><span class="sname">${esc(s.name)}</span><span class="smeta">${minutesLabel(s.seconds)} · ${esc(s.target)}</span></summary>
+      ${artHtml(s)}
       <ol>${s.steps.map(t => `<li>${esc(t)}</li>`).join("")}</ol>
       <p class="cue">${esc(s.cue)}</p>${s.caution ? `<p class="caution">⚠ ${esc(s.caution)}</p>` : ""}
     </details></li>`;
@@ -50,6 +54,7 @@ export function createMoveCard(root, api) {
         <h2>${esc(st.name)}</h2>
         <div class="rt-clock"><b id="rtSeconds">${s.secondsLeft}</b><span>seconds</span></div>
         <div class="rt-bar"><i id="rtBar" style="width:${Math.round(s.progress * 100)}%"></i></div>
+        ${artHtml(st)}
         <ol class="rt-steps">${st.steps.map(t => `<li>${esc(t)}</li>`).join("")}</ol>
         <p class="cue">${esc(st.cue)}</p>${st.caution ? `<p class="caution">⚠ ${esc(st.caution)}</p>` : ""}
         <div class="row"><button data-act="back">← Back</button><button data-act="${s.paused ? "resume" : "pause"}">${s.paused ? "Resume" : "Pause"}</button><button data-act="skip">Skip →</button><span class="spacer"></span><button class="ghost" data-act="stop">Stop</button></div>
