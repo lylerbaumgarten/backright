@@ -1,0 +1,484 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BackRight for physios — concept demo</title>
+<meta name="description" content="A clickable concept: BackRight as an app a physiotherapist prescribes. The patient does and logs exercises; the physio swaps them and sees how posture and pain change. Made-up data.">
+<link rel="icon" href="../icon.png">
+<style>
+  :root { --bad:#e5484d; --bg:#f6f5f2; --fg:#1f2421; --muted:#5f6862; --card:#fff; --line:#e3e1db; --ok:#3f8f5f; --ok-soft:#e4f3e8; --warn:#d98a1c; --warn-soft:#fbf0dc; --accent:#1f2421; --on-accent:#fff; --shadow:0 12px 40px rgba(31,36,33,.10); }
+  @media (prefers-color-scheme: dark) {
+    :root { --bad:#ff6b6f; --bg:#161917; --fg:#e8ebe8; --muted:#9aa39d; --card:#1f2421; --line:#2c332f; --ok:#5fbf86; --ok-soft:#1d2b23; --warn:#f0a23a; --warn-soft:#2e2615; --accent:#e8ebe8; --on-accent:#161917; --shadow:0 12px 40px rgba(0,0,0,.45); }
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif; background:var(--bg); color:var(--fg); -webkit-font-smoothing:antialiased; }
+  h1 { font-size:20px; margin:0; } h2 { font-size:16px; margin:0 0 8px; } h3 { font-size:14px; margin:0 0 4px; }
+  button, select, input, textarea { font:inherit; color:var(--fg); }
+  button { padding:8px 14px; border-radius:8px; border:1px solid var(--line); background:var(--card); cursor:pointer; }
+  button:hover:not(:disabled) { border-color:var(--muted); }
+  button.primary { background:var(--accent); color:var(--on-accent); border-color:var(--accent); }
+  button.small { padding:4px 10px; font-size:13px; }
+  button.link { border:0; background:none; padding:0; color:var(--muted); text-decoration:underline; font-size:13px; }
+  button:disabled { opacity:.4; cursor:default; }
+  button:focus-visible, select:focus-visible, input:focus-visible, textarea:focus-visible { outline:2px solid var(--warn); outline-offset:2px; }
+  input[type=number], select, textarea, input[type=text] { background:var(--card); border:1px solid var(--line); border-radius:8px; padding:6px 8px; }
+  input[type=number] { width:64px; }
+  textarea { width:100%; resize:vertical; }
+  input[type=range] { width:100%; }
+  .hint { color:var(--muted); font-size:13px; margin:6px 0; }
+  .muted { color:var(--muted); }
+  .row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+  .spread { display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px; margin-bottom:16px; }
+  .card.soft { background:var(--bg); }
+  .pill { display:inline-block; font-size:12px; font-weight:600; padding:2px 9px; border-radius:999px; background:var(--ok-soft); color:var(--ok); }
+  .pill.warn { background:var(--warn-soft); color:var(--warn); }
+  .pill.bad { background:color-mix(in srgb, var(--bad) 15%, transparent); color:var(--bad); }
+  .pill.mute { background:var(--bg); color:var(--muted); border:1px solid var(--line); }
+
+  /* ---- demo chrome ---- */
+  .demo-bar { background:var(--warn-soft); border-bottom:1px solid var(--line); padding:10px 16px; font-size:13px; }
+  .demo-bar .inner { max-width:1100px; margin:0 auto; display:flex; gap:12px; align-items:center; justify-content:space-between; flex-wrap:wrap; }
+  .who { max-width:1100px; margin:0 auto; padding:16px 16px 0; display:flex; gap:16px; align-items:center; flex-wrap:wrap; justify-content:space-between; }
+  .who h1 { display:flex; align-items:center; gap:10px; }
+  .who h1 img { width:28px; height:28px; border-radius:7px; }
+  .seg { display:inline-flex; border:1px solid var(--line); border-radius:10px; overflow:hidden; }
+  .seg button { border:0; border-radius:0; background:var(--card); padding:8px 16px; }
+  .seg button.on { background:var(--accent); color:var(--on-accent); }
+  #app { max-width:1100px; margin:0 auto; padding:16px 16px 56px; }
+
+  /* ---- patient: a BackRight-like window ---- */
+  .window { max-width:720px; margin:0 auto; background:var(--bg); border:1px solid var(--line); border-radius:14px; box-shadow:var(--shadow); overflow:hidden; }
+  .titlebar { display:flex; align-items:center; gap:8px; padding:10px 14px; background:var(--card); border-bottom:1px solid var(--line); }
+  .titlebar i { width:12px; height:12px; border-radius:50%; background:var(--line); display:block; }
+  .titlebar span { margin:0 auto; font-weight:600; font-size:13px; color:var(--muted); transform:translateX(-24px); }
+  .win-body { padding:16px; }
+  .tabs { display:flex; gap:4px; border-bottom:1px solid var(--line); margin-bottom:16px; }
+  .tabs button { border:0; border-radius:8px 8px 0 0; background:none; color:var(--muted); padding:8px 14px; }
+  .tabs button.on { color:var(--fg); box-shadow:inset 0 -2px 0 var(--accent); }
+  .banner { border:1px solid var(--ok); background:var(--ok-soft); border-radius:10px; padding:12px; margin-bottom:16px; }
+  .banner.warn { border-color:var(--warn); background:var(--warn-soft); }
+  .banner.bad { border-color:var(--bad); background:color-mix(in srgb, var(--bad) 10%, transparent); }
+  .ex { display:grid; grid-template-columns:96px 1fr auto; gap:14px; align-items:center; }
+  .ex .art, .tile { width:96px; height:72px; border-radius:8px; background:#fff; border:1px solid var(--line); overflow:hidden; }
+  .ex .art img { width:100%; height:100%; object-fit:cover; display:block; }
+  .tile { display:grid; place-items:center; background:var(--bg); color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:.05em; text-align:center; padding:4px; }
+  .ex h3 { font-size:15px; display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  .pips { display:flex; gap:5px; margin-top:6px; }
+  .pip { width:14px; height:14px; border-radius:50%; border:2px solid var(--line); }
+  .pip.on { background:var(--ok); border-color:var(--ok); }
+  .detail { margin-top:12px; padding-top:12px; border-top:1px dashed var(--line); }
+  .detail ol { padding-left:20px; margin:6px 0; } .detail li { margin-bottom:6px; }
+  .big { font-size:26px; font-weight:700; font-variant-numeric:tabular-nums; }
+  .bar { height:8px; border-radius:6px; background:var(--line); overflow:hidden; } .bar > i { display:block; height:100%; background:var(--ok); border-radius:6px; }
+  .chips { display:flex; flex-wrap:wrap; gap:6px; margin:6px 0; }
+  .chip { border-radius:999px; padding:5px 12px; font-size:13px; }
+  .chip.on { background:var(--accent); color:var(--on-accent); border-color:var(--accent); }
+  .painval { font-size:32px; font-weight:700; font-variant-numeric:tabular-nums; }
+
+  /* ---- physio dashboard ---- */
+  .clinic { display:grid; grid-template-columns:230px 1fr; gap:16px; align-items:start; }
+  @media (max-width:860px) { .clinic { grid-template-columns:1fr; } }
+  .side .pt { display:block; width:100%; text-align:left; margin-bottom:8px; padding:10px 12px; border-radius:10px; }
+  .side .pt.on { border-color:var(--accent); box-shadow:inset 3px 0 0 var(--accent); }
+  .side .pt.dead { opacity:.55; cursor:default; }
+  .tiles { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:16px; }
+  @media (max-width:860px) { .tiles { grid-template-columns:repeat(2,1fr); } }
+  .tile-k { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:12px 14px; }
+  .tile-k small { color:var(--muted); display:block; font-size:12px; }
+  .tile-k b { font-size:22px; font-variant-numeric:tabular-nums; }
+  .good { color:var(--ok); } .badc { color:var(--bad); } .neutral { color:var(--muted); }
+  .charts { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
+  @media (max-width:1000px) { .charts { grid-template-columns:1fr; } }
+  .charts h3 { margin-bottom:2px; }
+  svg.chart { width:100%; height:auto; display:block; }
+  svg.chart text { fill:var(--muted); font-size:9px; font-family:inherit; }
+  .gridl { stroke:var(--line); stroke-width:1; } .mk { stroke:var(--muted); stroke-width:1; stroke-dasharray:3 3; opacity:.7; }
+  .mkl { fill:var(--fg) !important; font-weight:700; font-size:9px; }
+  table { width:100%; border-collapse:collapse; font-size:14px; }
+  th { text-align:left; font-size:12px; font-weight:600; color:var(--muted); padding:6px 8px; border-bottom:1px solid var(--line); }
+  td { padding:8px; border-bottom:1px solid var(--line); vertical-align:top; }
+  tr:last-child td { border-bottom:0; }
+  .letter { display:inline-grid; place-items:center; width:20px; height:20px; border-radius:50%; background:var(--accent); color:var(--on-accent); font-size:11px; font-weight:700; }
+  .dose input { width:56px; }
+  .dose label { display:inline-flex; flex-direction:column; font-size:11px; color:var(--muted); margin-right:8px; }
+  .swapbox { background:var(--bg); border:1px solid var(--line); border-radius:10px; padding:12px; margin-top:8px; }
+  .opts { display:grid; gap:6px; margin:8px 0; }
+  .opt { display:flex; gap:10px; align-items:center; text-align:left; width:100%; }
+  .opt.on { border-color:var(--accent); box-shadow:inset 3px 0 0 var(--accent); }
+  .tag-bar { display:inline-block; height:8px; border-radius:4px; background:var(--warn); vertical-align:middle; }
+  footer { max-width:1100px; margin:0 auto; padding:0 16px 56px; color:var(--muted); font-size:13px; }
+  [hidden] { display:none !important; }
+  @media (max-width:560px) { .ex { grid-template-columns:72px 1fr; } .ex .art, .tile { width:72px; height:56px; } .ex > .act { grid-column:1 / -1; } }
+</style>
+</head>
+<body>
+
+<div class="demo-bar"><div class="inner">
+  <span><b>Concept demo.</b> A mock-up of BackRight as an app a physio prescribes. The patient, physio and all numbers are made up. This is not part of the BackRight app and not medical advice.</span>
+  <button class="small" data-act="reset">Reset demo</button>
+</div></div>
+
+<div class="who">
+  <h1><img src="../icon.png" alt="">BackRight <span class="muted" style="font-weight:400">for physios</span></h1>
+  <div class="row">
+    <span class="muted" style="font-size:13px">You are looking at:</span>
+    <div class="seg" role="tablist" aria-label="Whose screen">
+      <button role="tab" data-act="role" data-v="patient" id="r-patient">Patient — Sam</button>
+      <button role="tab" data-act="role" data-v="physio" id="r-physio">Physio — Dr. Rivera</button>
+    </div>
+  </div>
+</div>
+
+<div id="app"></div>
+
+<footer>
+  <p><b>What this shows:</b> the patient does and ticks off the prescribed exercises, logs pain and what they did that day, and BackRight adds the posture time it measured on-device. The physio edits the program (swap, add, change sets and reps), publishes it, and sees how adherence, posture and pain moved before and after each change.</p>
+  <p><b>What it can't show:</b> a before/after difference is not proof the change caused it. Sam's other activities, rest and plain recovery all move these numbers. The dashboard is a conversation aid for the physio, not a verdict.</p>
+</footer>
+
+<script>
+"use strict";
+const TODAY = 21;                       // "today" is day 21 of the program; days 1–20 are history
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;" }[c]));
+const clone = o => JSON.parse(JSON.stringify(o));
+const avg = a => a.length ? a.reduce((x, y) => x + y, 0) / a.length : NaN;
+
+/* ---------- exercise library (the physio's catalogue) ---------- */
+const LIB = [
+  { id:"chin-tuck", name:"Chin tucks", target:"Neck", img:"chin-tuck.webp", sets:2, reps:10, hold:5, perDay:3,
+    steps:["Sit tall, eyes level.", "Glide your chin straight back, as if making a gentle double chin — don't tip your head down.", "Hold, release, and repeat."], cue:"The back of your neck lengthens; it's a small movement.", caution:null },
+  { id:"deep-neck-flexor", name:"Chin tuck, lying down", target:"Neck", img:null, sets:2, reps:8, hold:10, perDay:2, progressionOf:"chin-tuck",
+    steps:["Lie on your back with a thin pillow under your head.", "Nod your chin gently, as if saying yes, then lift your head about a finger's width off the pillow.", "Hold, lower slowly, and rest between reps."], cue:"Deep at the front of the neck, not the surface muscles.", caution:"Stop if you feel dizzy or get arm symptoms." },
+  { id:"neck-tilt", name:"Neck side tilt", target:"Neck", img:"neck-tilt.webp", sets:2, reps:1, hold:20, perDay:2,
+    steps:["Sit tall and let both shoulders drop.", "Tilt your ear toward your shoulder — don't lift the shoulder to meet it.", "Hold, then switch sides."], cue:"A gentle stretch along the side of the neck.", caution:"No pulling with your hand." },
+  { id:"scap-squeeze", name:"Scapular squeeze", target:"Upper back", img:null, sets:2, reps:12, hold:5, perDay:2,
+    steps:["Sit or stand tall with your arms relaxed.", "Draw your shoulder blades gently back and down, as if tucking them into your back pockets.", "Hold, relax, repeat."], cue:"Work between the shoulder blades; don't shrug.", caution:null },
+  { id:"wall-angels", name:"Wall angels", target:"Upper back", img:"wall-angels.webp", sets:2, reps:8, hold:0, perDay:1,
+    steps:["Stand with your back to a wall, feet a few inches out.", "Put your arms in a goalpost shape against the wall.", "Slide them up and down, keeping contact as best you can."], cue:"Works the muscles that hold your shoulders back.", caution:"Go only as far as is comfortable." },
+  { id:"band-pull-apart", name:"Band pull-aparts", target:"Upper back", img:null, sets:3, reps:12, hold:0, perDay:1, progressionOf:"scap-squeeze",
+    steps:["Hold a light resistance band at chest height, arms straight.", "Pull the band apart until it touches your chest, squeezing your shoulder blades.", "Return slowly — don't let it snap back."], cue:"Back of the shoulders and between the blades.", caution:null },
+  { id:"upper-back-reach", name:"Upper-back reach", target:"Upper back", img:"upper-back-reach.webp", sets:2, reps:1, hold:15, perDay:2,
+    steps:["Interlace your fingers and push your palms away at chest height.", "Round your upper back and let your head drop between your arms.", "Hold, then slowly sit tall."], cue:"A stretch between the shoulder blades.", caution:null },
+  { id:"thoracic-ext", name:"Chair thoracic extension", target:"Mid back", img:null, sets:2, reps:8, hold:3, perDay:2,
+    steps:["Sit with your lower back against the top of a sturdy chair, hands behind your head.", "Gently lean back over the chair top, keeping your ribs down.", "Hold, return upright, and repeat, moving up a notch each time."], cue:"Movement in the middle of the back, not the neck or lower back.", caution:"Support your head with your hands; skip if it pinches." },
+  { id:"seated-twist", name:"Seated spinal twist", target:"Mid back", img:"seated-twist.webp", sets:2, reps:1, hold:20, perDay:2,
+    steps:["Sit tall with both feet flat.", "Right hand on your left knee, left hand on the chair back.", "Turn gently to look over your left shoulder; switch sides."], cue:"Rotation through the middle of the back.", caution:"Turn only as far as is comfortable." },
+  { id:"seated-chest-opener", name:"Seated chest opener", target:"Chest", img:"seated-chest-opener.webp", sets:2, reps:1, hold:30, perDay:2,
+    steps:["Sit tall near the front of your chair.", "Hands behind your head, or clasped behind your back.", "Draw your elbows back and lift your chest slightly. Keep breathing."], cue:"A stretch across the front of the chest.", caution:"Don't arch your lower back." },
+  { id:"doorway-pec", name:"Doorway chest stretch", target:"Chest", img:null, sets:2, reps:1, hold:30, perDay:2,
+    steps:["Stand in a doorway with your forearm on the frame, elbow at shoulder height.", "Step through gently until you feel a stretch across your chest.", "Hold, then switch arms."], cue:"Front of the chest and shoulder.", caution:"Stop if you feel tingling in the arm." },
+  { id:"behind-back-opener", name:"Behind-the-back opener", target:"Chest", img:"behind-back-opener.webp", sets:2, reps:1, hold:25, perDay:2,
+    steps:["Stand tall, clasp your hands behind your back and straighten your arms.", "Squeeze your shoulder blades together and lift your chest.", "Hold, breathing evenly."], cue:"Chest and fronts of the shoulders open up.", caution:"Keep your ribs down." },
+  { id:"shoulder-rolls", name:"Shoulder rolls", target:"Shoulders", img:"shoulder-rolls.webp", sets:1, reps:10, hold:0, perDay:3,
+    steps:["Lift your shoulders toward your ears.", "Roll them back and down in a big, slow circle.", "Then reverse for a few."], cue:"Loose and easy — no force.", caution:null },
+  { id:"cat-cow", name:"Cat–cow", target:"Mid back", img:null, sets:2, reps:10, hold:0, perDay:1,
+    steps:["On hands and knees, wrists under shoulders and knees under hips.", "Round your back toward the ceiling, then let it sag gently and lift your chest.", "Move slowly with your breathing."], cue:"A smooth wave through the whole spine.", caution:"Skip the sag if it pinches your lower back." },
+  { id:"hip-flexor", name:"Hip-flexor lunge stretch", target:"Hips", img:"hip-flexor.webp", sets:2, reps:1, hold:30, perDay:1,
+    steps:["Hand on your desk for balance, step your right foot back into a short lunge.", "Tuck your tailbone under and let your hips drift slightly forward.", "Hold, then switch legs."], cue:"Front of the back leg's hip — sitting shortens it.", caution:"Skip if it bothers your knee." },
+];
+const libGet = id => LIB.find(e => e.id === id);
+const mk = (id, over = {}) => ({ ...clone(libGet(id)), ...over });
+const dose = e => (e.reps === 1 && e.hold) ? `${e.sets} × ${e.hold}s hold` : `${e.sets} × ${e.reps}` + (e.hold ? ` · hold ${e.hold}s` : "");
+
+/* ---------- made-up history: days 1–20 ---------- */
+const TAG_LIST = ["Desk day", "Long calls", "Gym", "Long drive", "Gardening", "Rest day"];
+const TAGS = ["Desk day","Long calls","Desk day","Gym","Long calls","Rest day","Gardening",
+              "Desk day","Long calls","Long calls","Gym","Desk day","Long drive","Rest day",
+              "Desk day","Long calls","Desk day","Gym","Long calls","Rest day"];
+const SLOUCH_FX = { "Long calls":16, "Long drive":12, "Desk day":6, "Gym":-8, "Gardening":2, "Rest day":-16 };
+const PAIN_FX = { "Long calls":.6, "Long drive":.9, "Desk day":.2, "Gym":-.1, "Gardening":.5, "Rest day":-.5 };
+function seeded(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+function makeHistory() {
+  const r = seeded(11);
+  return TAGS.map((tag, i) => {
+    const d = i + 1;
+    return {
+      day: d, tag,
+      slouch: Math.round(98 - d * 1.7 - (d >= 8 ? 6 : 0) - (d >= 15 ? 4 : 0) + SLOUCH_FX[tag] + (r() - .5) * 14),
+      pain: clamp(Math.round(6.4 - d * .12 - (d >= 8 ? .5 : 0) - (d >= 15 ? .4 : 0) + PAIN_FX[tag] + (r() - .5) * 1.2), 1, 9),
+      adh: clamp(Math.round(42 + d * 2.4 + (tag === "Rest day" ? -14 : 0) + (r() - .5) * 16), 10, 100),
+    };
+  });
+}
+const dateLabel = d => { const x = new Date(); x.setDate(x.getDate() - (TODAY - d)); return x.toLocaleDateString(undefined, { month:"short", day:"numeric" }); };
+
+/* ---------- state ---------- */
+let state;
+function init(keepRole) {
+  const published = [mk("chin-tuck", { hold:5, reps:10 }), mk("seated-chest-opener"), mk("scap-squeeze"), mk("wall-angels")];
+  state = {
+    role: keepRole || "patient", ptab: "today",
+    history: makeHistory(),
+    published, draft: clone(published),
+    changes: [
+      { day:1, text:"Program started: Chin tucks, Seated chest opener, Scapular squeeze", reason:"" },
+      { day:8, text:"Added Wall angels", reason:"Shoulders rounding more on call days" },
+      { day:15, text:"Chin tucks: reps 8 → 10, hold 3 → 5", reason:"Coping well, ready for more" },
+    ],
+    done: { "chin-tuck":2, "seated-chest-opener":1, "scap-squeeze":1, "wall-angels":0 },
+    open: null, notice: [], noteFromPhysio: "", noteDraft: "",
+    checkin: { pain: 4, tag: "Desk day", note: "", sent: false },
+    slouchToday: 34, swapOpen: null, swapPick: null, addOpen: false, addPick: "",
+  };
+}
+
+/* ---------- derived numbers ---------- */
+const days = () => state.history;
+const last = (n, from = 20) => days().filter(d => d.day > from - n && d.day <= from);
+const sessionsPerDay = () => state.published.reduce((s, e) => s + e.perDay, 0);
+const doneToday = () => state.published.reduce((s, e) => s + Math.min(state.done[e.id] || 0, e.perDay), 0);
+function impact(day) {
+  if (day <= 1) return null;
+  const before = days().filter(d => d.day >= day - 7 && d.day < day);
+  const after = days().filter(d => d.day >= day && d.day <= day + 6);
+  if (after.length < 4 || before.length < 4) return null;
+  const f = k => avg(after.map(d => d[k])) - avg(before.map(d => d[k]));
+  return { slouch: f("slouch"), pain: f("pain"), adh: f("adh"), n: after.length };
+}
+function streak() { let s = 0; for (let i = 20; i >= 1; i--) { if (days()[i - 1].adh >= 70) s++; else break; } return s; }
+function diff() {
+  const out = [], pub = Object.fromEntries(state.published.map(p => [p.id, p])), dr = new Set(state.draft.map(d => d.id));
+  state.draft.forEach(d => {
+    const p = pub[d.id];
+    if (!p) out.push(d.replaces ? { text:`Swapped ${d.replaces} → ${d.name}`, reason:d.reason } : { text:`Added ${d.name}`, reason:d.reason });
+    else {
+      const bits = [];
+      [["sets","sets"],["reps","reps"],["hold","hold"],["perDay","times a day"]].forEach(([k, l]) => { if (p[k] !== d[k]) bits.push(`${l} ${p[k]} → ${d[k]}`); });
+      if (bits.length) out.push({ text:`${d.name}: ${bits.join(", ")}`, reason:d.reason });
+    }
+  });
+  state.published.forEach(p => { if (!dr.has(p.id) && !state.draft.some(d => d.replacesId === p.id)) out.push({ text:`Removed ${p.name}`, reason:"" }); });
+  return out;
+}
+
+/* ---------- charts (hand-rolled SVG, no libraries) ---------- */
+const ma = (a, n = 7) => a.map((_, i) => avg(a.slice(Math.max(0, i - n + 1), i + 1)));
+function chart(raw, { min, max, color, label, unit = "" }) {
+  const W = 320, H = 124, L = 26, R = 10, T = 14, B = 20, N = TODAY;
+  const x = i => L + i * (W - L - R) / (N - 1);
+  const y = v => T + (1 - (clamp(v, min, max) - min) / (max - min)) * (H - T - B);
+  const sm = ma(raw);
+  const mid = (min + max) / 2;
+  let s = `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(label)}, day 1 to day ${TODAY}">`;
+  [min, mid, max].forEach(v => { s += `<line class="gridl" x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}"/><text x="${L - 4}" y="${y(v) + 3}" text-anchor="end">${Math.round(v)}${unit}</text>`; });
+  state.changes.forEach((c, i) => {
+    const cx = x(c.day - 1);
+    s += `<line class="mk" x1="${cx}" x2="${cx}" y1="${T - 2}" y2="${H - B}"/><text class="mkl" x="${cx}" y="${T - 4}" text-anchor="middle">${String.fromCharCode(65 + i)}</text>`;
+  });
+  raw.forEach((v, i) => { s += `<circle cx="${x(i)}" cy="${y(v)}" r="1.8" fill="${color}" opacity=".35"/>`; });
+  s += `<polyline fill="none" stroke="${color}" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" points="${sm.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(" ")}"/>`;
+  [1, 11, 21].forEach(d => { s += `<text x="${x(d - 1)}" y="${H - 5}" text-anchor="${d === 1 ? "start" : d === 21 ? "end" : "middle"}">${d === 21 ? "today" : dateLabel(d)}</text>`; });
+  return s + "</svg>";
+}
+const series = k => days().map(d => d[k]);
+const chartsHtml = () => `
+  <div class="charts">
+    <div><h3>Time slouching <span class="muted" style="font-weight:400">(min/day)</span></h3>${chart(series("slouch"), { min:0, max:120, color:"var(--warn)", label:"Minutes slouching per day" })}</div>
+    <div><h3>Pain <span class="muted" style="font-weight:400">(0–10, self-reported)</span></h3>${chart(series("pain"), { min:0, max:10, color:"var(--bad)", label:"Pain score per day" })}</div>
+    <div><h3>Exercises done <span class="muted" style="font-weight:400">(% of prescribed)</span></h3>${chart(series("adh"), { min:0, max:100, color:"var(--ok)", unit:"%", label:"Share of prescribed exercises done per day" })}</div>
+  </div>
+  <p class="hint">Dots are single days; the line is a 7-day average. Letters mark program changes.</p>`;
+
+/* ---------- shared: change timeline with before/after ---------- */
+function fmtDelta(v, unit, goodDown) {
+  if (v == null || isNaN(v)) return "";
+  const good = goodDown ? v < 0 : v > 0, cls = Math.abs(v) < (unit === "pain" ? .2 : 1.5) ? "neutral" : (good ? "good" : "badc");
+  const n = unit === "pain" ? v.toFixed(1) : Math.round(v);
+  const u = unit === "min" ? " min" : unit === "%" ? " pts" : "";
+  return `<span class="${cls}">${v > 0 ? "+" : v < 0 ? "−" : ""}${String(n).replace("-", "")}${u}</span>`;
+}
+function changesHtml(forPatient) {
+  const rows = state.changes.map((c, i) => {
+    const im = impact(c.day);
+    const effect = c.day === 1 ? `<span class="muted">Baseline</span>`
+      : im ? `<div>Slouch ${fmtDelta(im.slouch, "min", true)} · Pain ${fmtDelta(im.pain, "pain", true)} · Done ${fmtDelta(im.adh, "%", false)}</div><div class="hint" style="margin:0">avg of ${im.n} days after vs 7 days before</div>`
+      : `<span class="muted">Too early to tell — needs about a week of data</span>`;
+    return `<tr><td><span class="letter">${String.fromCharCode(65 + i)}</span></td><td style="white-space:nowrap">${dateLabel(c.day)}</td><td>${esc(c.text)}${c.reason ? `<div class="hint" style="margin:2px 0 0">“${esc(c.reason)}”</div>` : ""}</td>${forPatient ? "" : `<td>${effect}</td>`}</tr>`;
+  }).join("");
+  return `<table><thead><tr><th></th><th>When</th><th>What changed</th>${forPatient ? "" : "<th>What happened next</th>"}</tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+/* ---------- PATIENT view ---------- */
+function exRow(e) {
+  const done = Math.min(state.done[e.id] || 0, e.perDay), complete = done >= e.perDay, open = state.open === e.id;
+  const art = e.img ? `<div class="art"><img src="img/${e.img}" alt="${esc(e.name)}, illustrated"></div>` : `<div class="tile">${esc(e.target)}</div>`;
+  const pips = Array.from({ length: e.perDay }, (_, i) => `<span class="pip ${i < done ? "on" : ""}"></span>`).join("");
+  return `<div class="card">
+    <div class="ex">${art}
+      <div><h3>${esc(e.name)} ${e.isNew ? `<span class="pill warn">New from Dr. Rivera</span>` : ""}${complete ? `<span class="pill">Done for today</span>` : ""}</h3>
+        <div class="muted">${dose(e)} · ${e.perDay}× today</div><div class="pips" aria-label="${done} of ${e.perDay} done">${pips}</div></div>
+      <div class="act"><button class="${complete ? "" : "primary"}" data-act="open" data-id="${e.id}">${open ? "Hide" : complete ? "View" : "Start"}</button></div>
+    </div>
+    ${open ? `<div class="detail"><ol>${e.steps.map(s => `<li>${esc(s)}</li>`).join("")}</ol>
+      <p class="muted" style="margin:6px 0"><b>You should feel:</b> ${esc(e.cue)}</p>
+      ${e.caution ? `<p class="muted" style="margin:6px 0"><b>Careful:</b> ${esc(e.caution)}</p>` : ""}
+      <div class="row"><button class="primary" data-act="done" data-id="${e.id}" ${complete ? "disabled" : ""}>I did one round (${dose(e)})</button>
+      ${(state.done[e.id] || 0) > 0 ? `<button class="link" data-act="undo" data-id="${e.id}">Undo</button>` : ""}</div></div>` : ""}
+  </div>`;
+}
+function patientToday() {
+  const ci = state.checkin, total = sessionsPerDay(), done = doneToday();
+  const yday = days()[19];
+  const notice = (state.notice.length || state.noteFromPhysio) ? `<div class="banner warn"><div class="spread"><b>Message from Dr. Rivera</b><button class="link" data-act="dismiss">Dismiss</button></div>
+      ${state.noteFromPhysio ? `<p style="margin:6px 0">“${esc(state.noteFromPhysio)}”</p>` : ""}
+      ${state.notice.length ? `<div style="margin-top:6px"><b>Your program was updated:</b><ul style="margin:4px 0 0;padding-left:20px">${state.notice.map(n => `<li>${esc(n)}</li>`).join("")}</ul></div>` : ""}</div>` : "";
+  return `${notice}
+    <div class="card"><div class="spread"><div><div class="muted" style="font-size:13px">Today · day ${TODAY} of 42 · prescribed by Dr. Alex Rivera, PT</div>
+        <div class="big">${done} of ${total} <span style="font-size:15px;font-weight:400" class="muted">exercise rounds done</span></div></div>
+        <div style="min-width:170px"><div class="bar" role="progressbar" aria-valuenow="${done}" aria-valuemin="0" aria-valuemax="${total}"><i style="width:${total ? done / total * 100 : 0}%"></i></div>
+        <div class="hint" style="text-align:right">${streak()}-day streak of 70%+</div></div></div></div>
+    <div class="card"><div class="spread"><div><h2 style="margin:0">Posture today</h2><div class="muted">Measured on your Mac. The video never leaves it; only these minutes are shared with your physio.</div></div>
+      <div style="text-align:right"><span class="big">${state.slouchToday}</span> <span class="muted">min slouching so far</span><div class="hint" style="margin:0">yesterday: ${yday.slouch} min in total</div></div></div></div>
+    ${state.published.map(exRow).join("")}
+    <div class="card"><h2>Check-in for today</h2>
+      <label for="pain" class="muted">How is your neck / back right now? <span class="muted">(0 = no pain, 10 = worst)</span></label>
+      <div class="row"><span class="painval" id="painval">${ci.pain}</span><input id="pain" type="range" min="0" max="10" step="1" value="${ci.pain}" style="flex:1;min-width:160px" data-field="pain"></div>
+      ${ci.pain >= 8 ? `<div class="banner bad" style="margin:8px 0">High pain. If this is new, severe, or comes with numbness, weakness or fever, contact your physio or a doctor now. Don't wait for the app.</div>` : ""}
+      <div class="muted" style="font-size:13px;margin-top:10px">What did today involve?</div>
+      <div class="chips">${TAG_LIST.map(t => `<button class="chip ${ci.tag === t ? "on" : ""}" data-act="tag" data-v="${esc(t)}" aria-pressed="${ci.tag === t}">${t}</button>`).join("")}</div>
+      <label for="note" class="muted">Anything your physio should know? (optional)</label>
+      <textarea id="note" rows="2" data-field="note" placeholder="e.g. neck felt stiff after the afternoon calls">${esc(ci.note)}</textarea>
+      <div class="row" style="margin-top:10px"><button class="primary" data-act="send">${ci.sent ? "Update check-in" : "Send to Dr. Rivera"}</button>${ci.sent ? `<span class="pill">Sent</span>` : ""}</div></div>
+    <p class="hint">General exercise guidance from your physio. Stop and message them if pain rises or you notice numbness or tingling.</p>`;
+}
+function patientProgress() {
+  const w1 = last(7), w0 = last(7, 13);
+  return `<div class="card"><h2>How you're doing</h2><p class="muted" style="margin-top:0">Your last 7 days vs the 7 before: you slouch about <b>${Math.round(avg(w0.map(d => d.slouch)) - avg(w1.map(d => d.slouch)))} min less</b> a day and your pain is <b>${(avg(w0.map(d => d.pain)) - avg(w1.map(d => d.pain))).toFixed(1)} points lower</b>. Good consistency counts for more than any single day.</p>${chartsHtml()}</div>
+    <div class="card"><h2>What your physio has changed</h2>${changesHtml(true)}</div>`;
+}
+function patientView() {
+  return `<div class="window"><div class="titlebar"><i></i><i></i><i></i><span>BackRight</span></div><div class="win-body">
+    <div class="tabs" role="tablist"><button role="tab" class="${state.ptab === "today" ? "on" : ""}" data-act="ptab" data-v="today">Today</button><button role="tab" class="${state.ptab === "progress" ? "on" : ""}" data-act="ptab" data-v="progress">Progress</button><button role="tab" disabled title="Same as the real BackRight app">Monitor</button><button role="tab" disabled title="Same as the real BackRight app">Privacy</button></div>
+    ${state.ptab === "today" ? patientToday() : patientProgress()}</div></div>
+    <p class="hint" style="text-align:center">Try it: start an exercise, tick it off, send a check-in. Then switch to the physio side and watch it arrive.</p>`;
+}
+
+/* ---------- PHYSIO view ---------- */
+function tilesHtml() {
+  const a = last(7), b = last(7, 13), ci = state.checkin;
+  const d = (k, goodDown, unit) => { const v = avg(a.map(x => x[k])) - avg(b.map(x => x[k])); return fmtDelta(v, unit, goodDown) + ` <span class="muted" style="font-size:12px">vs prior week</span>`; };
+  return `<div class="tiles">
+    <div class="tile-k"><small>Exercises done (7 days)</small><b>${Math.round(avg(a.map(x => x.adh)))}%</b><div>${d("adh", false, "%")}</div></div>
+    <div class="tile-k"><small>Slouching (7-day avg)</small><b>${Math.round(avg(a.map(x => x.slouch)))} min/day</b><div>${d("slouch", true, "min")}</div></div>
+    <div class="tile-k"><small>Pain (7-day avg)</small><b>${avg(a.map(x => x.pain)).toFixed(1)} / 10</b><div>${d("pain", true, "pain")}</div></div>
+    <div class="tile-k"><small>Today's check-in</small>${ci.sent ? `<b class="${ci.pain >= 8 ? "badc" : ""}">Pain ${ci.pain}</b><div class="muted" style="font-size:13px">${esc(ci.tag)}${ci.pain >= 8 ? " · <b>flag: high pain</b>" : ""}</div>` : `<b class="muted">Not yet</b><div class="muted" style="font-size:13px">${doneToday()} of ${sessionsPerDay()} rounds done</div>`}</div></div>
+    ${ci.sent && ci.note ? `<div class="banner"><b>Sam's note today:</b> “${esc(ci.note)}”</div>` : ""}`;
+}
+function activityHtml() {
+  const rows = TAG_LIST.map(t => { const ds = days().filter(d => d.tag === t); return { t, n: ds.length, slouch: avg(ds.map(d => d.slouch)), pain: avg(ds.map(d => d.pain)), adh: avg(ds.map(d => d.adh)) }; }).filter(r => r.n).sort((x, y) => y.slouch - x.slouch);
+  // Compare within the same stretch of the program, so general improvement over time doesn't pose as an activity effect.
+  const desk = rows.find(r => r.t === "Desk day"), top = rows.find(r => r.n >= 3);   // one or two days is an anecdote, not a pattern
+  const maxS = Math.max(...rows.map(r => r.slouch));
+  const callout = top && desk && top.t !== "Desk day" ? `<div class="banner warn" style="margin:12px 0 0"><b>Pattern:</b> “${top.t}” days run about <b>${Math.round(top.slouch - desk.slouch)} min more slouching</b> and <b>${(top.pain - desk.pain).toFixed(1)} higher pain</b> than plain desk days. Worth asking Sam what happens on those days, and whether a mid-day exercise round would help.</div>` : "";
+  return `<table><thead><tr><th>What the day involved (tagged by Sam)</th><th>Days</th><th>Slouch min</th><th>Pain</th><th>Exercises done</th></tr></thead><tbody>
+    ${rows.map(r => `<tr${r.n < 3 ? ` class="muted" title="Too few days to read anything into"` : ""}><td>${r.t}${r.n < 3 ? ` <span class="pill mute">too few days</span>` : ""}</td><td>${r.n}</td><td><span class="tag-bar" style="width:${Math.round(r.slouch / maxS * 70)}px"></span> ${Math.round(r.slouch)}</td><td>${r.pain.toFixed(1)}</td><td>${Math.round(r.adh)}%</td></tr>`).join("")}</tbody></table>${callout}
+    <p class="hint">Averages over days 1–20. The program also improved over this period, so compare rows with each other, not with the first week.</p>`;
+}
+function editorRow(e) {
+  const swapOpen = state.swapOpen === e.id;
+  const inProgram = new Set(state.draft.map(x => x.id));
+  const cands = LIB.filter(l => !inProgram.has(l.id)).sort((a, b) => (b.target === e.target) - (a.target === e.target) || (b.progressionOf === e.id) - (a.progressionOf === e.id));
+  const n = (k, v, extra = "") => `<label>${{ sets:"Sets", reps:"Reps", hold:"Hold (s)", perDay:"× per day" }[k]}<input type="number" min="${k === "perDay" || k === "sets" ? 1 : 0}" max="30" value="${v}" data-field="dose" data-id="${e.id}" data-k="${k}" ${extra}></label>`;
+  return `<tr><td style="width:34%"><b>${esc(e.name)}</b> ${e.replaces ? `<span class="pill warn">swap pending</span>` : !state.published.some(p => p.id === e.id) ? `<span class="pill warn">new, unpublished</span>` : ""}<div class="muted" style="font-size:13px">${esc(e.target)}${e.replaces ? ` · replaces ${esc(e.replaces)}` : ""}</div></td>
+    <td class="dose">${n("sets", e.sets)}${n("reps", e.reps)}${n("hold", e.hold)}${n("perDay", e.perDay)}</td>
+    <td style="white-space:nowrap;text-align:right"><button class="small" data-act="swapopen" data-id="${e.id}">${swapOpen ? "Close" : "Swap…"}</button> <button class="small" data-act="remove" data-id="${e.id}" aria-label="Remove ${esc(e.name)}">Remove</button></td></tr>
+    ${swapOpen ? `<tr><td colspan="3"><div class="swapbox"><b>Swap “${esc(e.name)}” for…</b> <span class="muted">(same body area and progressions first)</span>
+      <div class="opts">${cands.slice(0, 6).map(c => `<button class="opt ${state.swapPick === c.id ? "on" : ""}" data-act="swappick" data-id="${c.id}"><span style="flex:1"><b>${esc(c.name)}</b> <span class="muted">· ${esc(c.target)} · ${dose(c)}, ${c.perDay}×/day</span></span>${c.progressionOf === e.id ? `<span class="pill">progression</span>` : c.target === e.target ? `<span class="pill mute">same area</span>` : ""}</button>`).join("")}</div>
+      <label class="muted" style="display:block;font-size:13px">Reason (Sam will see this) <input type="text" id="swapreason" style="width:100%" placeholder="e.g. neck is coping well — time to progress"></label>
+      <div class="row" style="margin-top:8px"><button class="primary" data-act="swapdo" data-id="${e.id}" ${state.swapPick ? "" : "disabled"}>Swap in draft</button><span class="hint">Nothing reaches Sam until you publish.</span></div></div></td></tr>` : ""}`;
+}
+function physioView() {
+  const dif = diff(), inProgram = new Set(state.draft.map(x => x.id)), addable = LIB.filter(l => !inProgram.has(l.id));
+  return `<div class="clinic"><aside class="side card" style="padding:12px">
+      <h3 style="margin:0 0 8px">Patients <span class="muted" style="font-weight:400">· made up</span></h3>
+      <button class="pt on">Sam M.<div class="muted" style="font-size:12px">Neck &amp; upper back · day ${TODAY}/42</div><span class="pill" style="margin-top:4px">pain trending down</span></button>
+      <button class="pt dead" tabindex="-1" aria-disabled="true">Jordan P.<div class="muted" style="font-size:12px">Lower back · day 30/56</div><span class="pill">92% done</span></button>
+      <button class="pt dead" tabindex="-1" aria-disabled="true">Priya N.<div class="muted" style="font-size:12px">Shoulder · day 12/42</div><span class="pill bad">no check-in for 5 days</span></button>
+      <p class="hint">The demo opens Sam only. A real tool would sort this list so the people who need you today come first, and patients choose what they share.</p></aside>
+    <div>
+      <div class="card" style="background:var(--ok-soft);border-color:var(--ok)"><div class="spread"><div><b>Sam shares with you:</b> exercise log, daily slouch minutes, pain, activity tags and notes.<div class="muted" style="font-size:13px">Never: camera images, screenshots, or anything else on their computer. Sam can switch this off at any time.</div></div></div></div>
+      ${tilesHtml()}
+      <div class="card"><h2>Trends, with your program changes marked</h2>${chartsHtml()}</div>
+      <div class="card"><h2>What you changed, and what happened next</h2>${changesHtml(false)}<p class="hint">Before/after is a prompt for a conversation, not proof of cause: rest, workload and recovery also move these numbers.</p></div>
+      <div class="card"><h2>Activities and posture</h2>${activityHtml()}</div>
+      <div class="card"><div class="spread"><h2 style="margin:0">Sam's program</h2><span class="muted" style="font-size:13px">${state.draft.reduce((s, e) => s + e.perDay, 0)} rounds a day</span></div>
+        <table><thead><tr><th>Exercise</th><th>Dose</th><th></th></tr></thead><tbody>${state.draft.map(editorRow).join("")}</tbody></table>
+        <div class="row" style="margin-top:10px">${state.addOpen ? `<select id="addsel" aria-label="Exercise to add"><option value="">Choose an exercise…</option>${addable.map(l => `<option value="${l.id}">${esc(l.name)} (${esc(l.target)})</option>`).join("")}</select><button data-act="adddo">Add</button><button class="link" data-act="addopen">Cancel</button>` : `<button data-act="addopen">+ Add exercise</button>`}</div>
+        <div class="card soft" style="margin:14px 0 0"><div class="spread"><div><b>${dif.length ? `${dif.length} unpublished change${dif.length > 1 ? "s" : ""}` : "Draft matches what Sam sees"}</b>
+          ${dif.length ? `<ul style="margin:6px 0 0;padding-left:20px">${dif.map(x => `<li>${esc(x.text)}</li>`).join("")}</ul>` : ""}</div>
+          <button class="primary" data-act="publish" ${dif.length ? "" : "disabled"}>Publish to Sam's app</button></div></div></div>
+      <div class="card"><h2>Note to Sam</h2><textarea id="phnote" rows="2" data-field="phnote" placeholder="e.g. Nice work this week. On call days, try one round of chin tucks between meetings.">${esc(state.noteDraft)}</textarea>
+        <div class="row" style="margin-top:8px"><button data-act="sendnote">Send note</button></div></div>
+    </div></div>`;
+}
+
+/* ---------- render + events ---------- */
+const app = document.getElementById("app");
+function render() {
+  document.getElementById("r-patient").classList.toggle("on", state.role === "patient");
+  document.getElementById("r-physio").classList.toggle("on", state.role === "physio");
+  document.getElementById("r-patient").setAttribute("aria-selected", state.role === "patient");
+  document.getElementById("r-physio").setAttribute("aria-selected", state.role === "physio");
+  app.innerHTML = state.role === "patient" ? patientView() : physioView();
+}
+document.addEventListener("click", e => {
+  const b = e.target.closest("[data-act]"); if (!b || b.disabled) return;
+  const a = b.dataset.act, id = b.dataset.id, v = b.dataset.v;
+  const find = i => state.draft.find(x => x.id === i);
+  switch (a) {
+    case "reset": init(state.role); break;
+    case "role": state.role = v; break;
+    case "ptab": state.ptab = v; break;
+    case "open": state.open = state.open === id ? null : id; break;
+    case "done": { const ex = state.published.find(x => x.id === id); state.done[id] = Math.min(ex.perDay, (state.done[id] || 0) + 1); ex.isNew = false; break; }
+    case "undo": state.done[id] = Math.max(0, (state.done[id] || 0) - 1); break;
+    case "tag": state.checkin.tag = v; state.checkin.sent = false; break;
+    case "send": state.checkin.sent = true; break;
+    case "dismiss": state.notice = []; state.noteFromPhysio = ""; break;
+    case "swapopen": state.swapOpen = state.swapOpen === id ? null : id; state.swapPick = null; break;
+    case "swappick": state.swapPick = id; break;
+    case "swapdo": {
+      const old = find(id), reason = (document.getElementById("swapreason") || {}).value || "", neu = mk(state.swapPick, { reason });
+      const inPub = state.published.some(p => p.id === old.id);
+      neu.replaces = inPub ? old.name : old.replaces; neu.replacesId = inPub ? old.id : old.replacesId;
+      state.draft[state.draft.indexOf(old)] = neu; state.swapOpen = null; state.swapPick = null; break;
+    }
+    case "remove": state.draft = state.draft.filter(x => x.id !== id); if (state.swapOpen === id) state.swapOpen = null; break;
+    case "addopen": state.addOpen = !state.addOpen; break;
+    case "adddo": { const sel = document.getElementById("addsel").value; if (sel) { state.draft.push(mk(sel)); state.addOpen = false; } break; }
+    case "publish": {
+      const dif = diff(); if (!dif.length) break;
+      dif.forEach(x => state.changes.push({ day: TODAY, text: x.text, reason: x.reason || "" }));
+      const had = new Set(state.published.map(p => p.id));
+      state.published = state.draft.map(d => { const c = clone(d); c.isNew = !had.has(d.id); delete c.replaces; delete c.replacesId; delete c.reason; return c; });
+      state.draft = clone(state.published); state.draft.forEach(d => delete d.isNew);
+      state.notice = state.notice.concat(dif.map(x => x.text + (x.reason ? ` — “${x.reason}”` : "")));
+      state.published.forEach(p => { if (!(p.id in state.done)) state.done[p.id] = 0; });
+      break;
+    }
+    case "sendnote": { const t = state.noteDraft.trim(); if (t) { state.noteFromPhysio = t; state.noteDraft = ""; } break; }
+  }
+  render();
+});
+document.addEventListener("change", e => {
+  const t = e.target;
+  if (t.dataset.field === "pain") { state.checkin.pain = +t.value; state.checkin.sent = false; render(); }
+  else if (t.dataset.field === "dose") {
+    const ex = state.draft.find(x => x.id === t.dataset.id), k = t.dataset.k;
+    ex[k] = clamp(parseInt(t.value, 10) || 0, (k === "sets" || k === "perDay") ? 1 : 0, 30);
+    render();
+  }
+});
+document.addEventListener("input", e => {
+  const t = e.target;
+  if (t.dataset.field === "pain") { state.checkin.pain = +t.value; document.getElementById("painval").textContent = t.value; }   // no re-render mid-drag
+  else if (t.dataset.field === "note") { state.checkin.note = t.value; state.checkin.sent = false; }
+  else if (t.dataset.field === "phnote") { state.noteDraft = t.value; }
+});
+init(); render();
+</script>
+</body>
+</html>
